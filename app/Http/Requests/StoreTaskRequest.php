@@ -2,8 +2,9 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
+use App\Enums\TaskPriority;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreTaskRequest extends FormRequest
 {
@@ -20,7 +21,7 @@ class StoreTaskRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'max:255'],
             'due_date' => ['nullable', 'date'],
-            'priority' => ['nullable', 'string', 'in:low,medium,high,urgent'],
+            'priority' => ['nullable', 'string', Rule::enum(TaskPriority::class)],
         ];
     }
 }

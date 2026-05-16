@@ -25,7 +25,7 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
-        title: 'Tasks',
+        title: 'Tarefas',
         href: tasksIndex(),
         icon: ListTodo,
     },

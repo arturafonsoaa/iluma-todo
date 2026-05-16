@@ -12,7 +12,7 @@ class TaskController extends Controller
 {
     public function index(): Response
     {
-        $tasks = auth()->user()->tasks()->latest()->get();
+        $tasks = auth()->user()->tasks()->with('user')->whereNull('completed_at')->latest()->get();
 
         return Inertia::render('tasks/Index', [
             'tasks' => $tasks,
