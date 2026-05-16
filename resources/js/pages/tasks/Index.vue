@@ -5,6 +5,14 @@ import { ref, watch } from 'vue';
 import TaskForm from '@/components/TaskForm.vue';
 import TaskDetailSheet from '@/components/TaskDetailSheet.vue';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 import { index as tasksIndex } from '@/routes/tasks';
 import { toast } from 'vue-sonner';
 
@@ -61,7 +69,7 @@ const fadingTaskIds = ref<Set<number>>(new Set());
 const localFilter = ref<'pending' | 'completed'>(props.filter ?? 'pending');
 const localTasks = ref<Task[]>([...props.tasks.data]);
 const localPaginator = ref<PaginatedTasks>(props.tasks);
-const showForm = ref(false);
+const dialogOpen = ref(false);
 
 watch(
     () => props.tasks,
@@ -184,7 +192,7 @@ function getPriorityLabel(priority: string): string {
 }
 
 function handleTaskSubmit() {
-    showForm.value = false;
+    dialogOpen.value = false;
     toast.success('Tarefa adicionada com sucesso!');
 }
 </script>
@@ -194,24 +202,33 @@ function handleTaskSubmit() {
 
     <div class="flex h-full flex-1 flex-col gap-8 overflow-x-auto p-4 md:p-8">
         <div class="mx-auto w-full max-w-3xl space-y-8">
-            <div class="space-y-2">
-                <h1 class="text-3xl font-semibold tracking-tight text-foreground">
-                    Minhas Tarefas
-                </h1>
-                <p class="text-sm text-muted-foreground">
-                    Organize seu dia, uma tarefa de cada vez
-                </p>
-            </div>
+            <div class="flex items-center justify-between">
+                <div class="space-y-1">
+                    <h1 class="text-3xl font-semibold tracking-tight text-foreground">
+                        Minhas Tarefas
+                    </h1>
+                    <p class="text-sm text-muted-foreground">
+                        Organize seu dia, uma tarefa de cada vez
+                    </p>
+                </div>
 
-            <div v-if="!showForm" class="flex justify-end">
-                <Button @click="showForm = true" variant="outline">
-                    <Plus class="size-4" />
-                    <span>Adicionar tarefa</span>
-                </Button>
-            </div>
-
-            <div v-else class="rounded-xl border bg-card p-4 shadow-sm">
-                <TaskForm @submit="handleTaskSubmit" @cancel="showForm = false" />
+                <Dialog v-model:open="dialogOpen">
+                    <DialogTrigger as-child>
+                        <Button variant="outline">
+                            <Plus class="size-4" />
+                            <span>Adicionar tarefa</span>
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent class="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>Nova Tarefa</DialogTitle>
+                            <DialogDescription>
+                                Preencha os dados para criar uma nova tarefa.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <TaskForm @submit="handleTaskSubmit" @cancel="dialogOpen = false" />
+                    </DialogContent>
+                </Dialog>
             </div>
 
             <div class="flex items-center justify-between">
