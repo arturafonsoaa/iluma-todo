@@ -129,15 +129,9 @@ function formatFullDate(dateStr: string): string {
     <Head title="Dashboard" />
 
     <div class="flex flex-1 flex-col gap-6 p-4 md:gap-8 md:p-6 lg:p-8">
-        <!-- Header -->
-        <div>
-            <h1 class="text-3xl font-bold tracking-tight text-foreground">
-                Dashboard
-            </h1>
-            <p class="mt-1 text-sm text-muted-foreground">
-                Acompanhe seu progresso e produtividade
-            </p>
-        </div>
+        <p class="text-sm text-muted-foreground">
+            Acompanhe seu progresso e produtividade
+        </p>
 
         <!-- Stats Cards -->
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
