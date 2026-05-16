@@ -3,6 +3,7 @@ import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { useForm } from '@inertiajs/vue3';
 import { ListTodo, Plus, Trash2, CalendarDays, Flag, CheckCircle2, CircleDot, ChevronLeft, ChevronRight, RotateCcw, CirclePlay, Folder, X, Search } from 'lucide-vue-next';
 import { ref, watch, computed } from 'vue';
+import ProjectColorDot from '@/components/ProjectColorDot.vue';
 import TaskDetailSheet from '@/components/TaskDetailSheet.vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,6 +15,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from '@/components/ui/select';
+import {
+    ALL_PROJECTS_STYLES,
+    DEFAULT_PROJECT_COLOR,
+    getProjectColorStyles,
+    PROJECT_COLOR_OPTIONS,
+    type ProjectColorKey,
+} from '@/lib/project-colors';
 import { index as tasksIndex } from '@/routes/tasks';
 
 interface Task {
@@ -32,6 +40,7 @@ interface Task {
         id: number;
         ulid: string;
         name: string;
+        color?: string;
     } | null;
 }
 
@@ -39,6 +48,7 @@ interface Project {
     id: number;
     ulid: string;
     name: string;
+    color: string;
     tasks_count?: number;
 }
 
@@ -101,6 +111,7 @@ const localProjectUlid = ref<string | null>(props.selectedProjectUlid || null);
 
 const projectForm = useForm({
     name: '',
+    color: DEFAULT_PROJECT_COLOR as ProjectColorKey,
 });
 
 function createProject() {
@@ -109,6 +120,7 @@ function createProject() {
         onSuccess: () => {
             dialogProjectOpen.value = false;
             projectForm.reset();
+            projectForm.color = DEFAULT_PROJECT_COLOR;
         },
     });
 }
@@ -137,6 +149,18 @@ const inProgressTasks = computed(() =>
 
 const selectedProject = computed(() =>
     sharedProjects.value.find((p) => p.ulid === localProjectUlid.value) ?? null,
+);
+
+const selectedProjectColorStyles = computed(() =>
+    selectedProject.value
+        ? getProjectColorStyles(selectedProject.value.color)
+        : ALL_PROJECTS_STYLES,
+);
+
+const projectSelectTriggerClass = computed(() =>
+    selectedProject.value
+        ? getProjectColorStyles(selectedProject.value.color).trigger
+        : ALL_PROJECTS_STYLES.trigger,
 );
 
 watch(
@@ -427,9 +451,20 @@ function restoreTask(task: Task, event: Event) {
 
                 <div v-if="sharedProjects.length > 0" class="flex items-center self-start relative">
                     <Select :model-value="localProjectUlid ?? 'all'" @update:model-value="handleSelectProject">
-                        <SelectTrigger class="inline-flex max-w-[280px] w-auto h-10 px-4 rounded-full border border-blue-200 bg-blue-50 text-sm font-medium text-blue-700 shadow-sm transition-colors hover:bg-blue-100 disabled:opacity-50 disabled:pointer-events-none dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:bg-blue-900/50 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 data-[state=open]:bg-blue-100">
+                        <SelectTrigger
+                            class="inline-flex max-w-[280px] w-auto h-10 px-4 rounded-full border text-sm font-medium shadow-sm transition-colors disabled:opacity-50 disabled:pointer-events-none outline-none focus-visible:ring-2"
+                            :class="projectSelectTriggerClass"
+                        >
                             <div class="flex items-center gap-2 max-w-full overflow-hidden">
-                                <Folder class="size-4 shrink-0" />
+                                <ProjectColorDot
+                                    v-if="selectedProject"
+                                    :dot-class="selectedProjectColorStyles.dot"
+                                />
+                                <Folder
+                                    v-else
+                                    class="size-4 shrink-0"
+                                    :class="ALL_PROJECTS_STYLES.icon"
+                                />
                                 <span class="truncate block">
                                     {{ selectedProject ? selectedProject.name : 'Todos os projetos' }}
                                 </span>
@@ -440,15 +475,16 @@ function restoreTask(task: Task, event: Event) {
                             <SelectGroup class="max-h-[300px] overflow-y-auto py-1">
                                 <SelectItem
                                     value="all"
-                                    class="flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors focus:bg-accent focus:text-accent-foreground data-[state=checked]:bg-blue-50 dark:data-[state=checked]:bg-blue-950/40"
+                                    class="flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors focus:bg-accent focus:text-accent-foreground"
+                                    :class="ALL_PROJECTS_STYLES.itemChecked"
                                 >
                                     <div class="flex items-center gap-3 w-[260px]">
-                                        <Folder class="size-4 shrink-0" :class="!selectedProject ? 'text-blue-700 dark:text-blue-400' : 'text-muted-foreground'" />
-                                        <span class="flex-1 truncate text-sm font-medium" :class="!selectedProject ? 'text-blue-700 dark:text-blue-400' : 'text-foreground'">
+                                        <Folder class="size-4 shrink-0" :class="!selectedProject ? ALL_PROJECTS_STYLES.icon : 'text-muted-foreground'" />
+                                        <span class="flex-1 truncate text-sm font-medium" :class="!selectedProject ? 'text-foreground font-medium' : 'text-foreground'">
                                             Todos os projetos
                                         </span>
                                         <span class="ml-auto rounded-md px-2 py-0.5 text-xs inline-flex shrink-0 items-center justify-center font-medium"
-                                            :class="!selectedProject ? 'bg-blue-100/60 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-semibold' : 'text-muted-foreground'">
+                                            :class="!selectedProject ? ALL_PROJECTS_STYLES.badge : 'text-muted-foreground'">
                                             {{ counts.pending + counts.completed + counts.trash }} {{ (counts.pending + counts.completed + counts.trash) === 1 ? 'tarefa' : 'tarefas' }}
                                         </span>
                                     </div>
@@ -458,16 +494,17 @@ function restoreTask(task: Task, event: Event) {
                                     v-for="project in sharedProjects"
                                     :key="project.ulid"
                                     :value="project.ulid"
-                                    class="flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors focus:bg-accent focus:text-accent-foreground data-[state=checked]:bg-blue-50 dark:data-[state=checked]:bg-blue-950/40"
+                                    class="flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors focus:bg-accent focus:text-accent-foreground"
+                                    :class="getProjectColorStyles(project.color).itemChecked"
                                 >
                                     <div class="flex items-center gap-3 w-[260px]">
-                                        <Folder class="size-4 shrink-0" :class="selectedProject?.ulid === project.ulid ? 'text-blue-700 dark:text-blue-400' : 'text-muted-foreground'" />
-                                        <span class="flex-1 truncate text-sm font-medium" :class="selectedProject?.ulid === project.ulid ? 'text-blue-700 dark:text-blue-400' : 'text-foreground'">
+                                        <ProjectColorDot :dot-class="getProjectColorStyles(project.color).dot" />
+                                        <span class="flex-1 truncate text-sm font-medium" :class="selectedProject?.ulid === project.ulid ? getProjectColorStyles(project.color).count : 'text-foreground'">
                                             {{ project.name }}
                                         </span>
                                         <span v-if="project.tasks_count !== undefined"
                                             class="ml-auto rounded-md px-2 py-0.5 text-xs inline-flex flex-shrink-0 items-center justify-center font-medium"
-                                            :class="selectedProject?.ulid === project.ulid ? 'bg-blue-100/60 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-semibold' : 'text-muted-foreground'">
+                                            :class="selectedProject?.ulid === project.ulid ? getProjectColorStyles(project.color).badge : 'text-muted-foreground'">
                                             {{ project.tasks_count }} {{ project.tasks_count === 1 ? 'tarefa' : 'tarefas' }}
                                         </span>
                                     </div>
@@ -827,6 +864,29 @@ function restoreTask(task: Task, event: Event) {
                         <div class="space-y-2">
                             <label class="text-sm font-medium">Nome do Projeto</label>
                             <Input v-model="projectForm.name" type="text" placeholder="Ex: Marketing Digital" required />
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium">Cor</label>
+                            <Select v-model="projectForm.color">
+                                <SelectTrigger class="w-full">
+                                    <div class="flex items-center gap-2">
+                                        <ProjectColorDot :dot-class="getProjectColorStyles(projectForm.color).dot" />
+                                        <SelectValue :placeholder="getProjectColorStyles(projectForm.color).label" />
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem
+                                        v-for="option in PROJECT_COLOR_OPTIONS"
+                                        :key="option.key"
+                                        :value="option.key"
+                                    >
+                                        <div class="flex items-center gap-2">
+                                            <ProjectColorDot :dot-class="option.dot" />
+                                            <span>{{ option.label }}</span>
+                                        </div>
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div class="flex justify-end gap-2">
                             <Button type="button" variant="outline" @click="dialogProjectOpen = false">Cancelar</Button>

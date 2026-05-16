@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\ProjectColor;
 use App\Models\Project;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -20,6 +21,7 @@ class ProjectFactory extends Factory
         return [
             'ulid' => fake()->ulid(),
             'name' => fake()->sentence(3),
+            'color' => ProjectColor::Blue,
         ];
     }
 }
