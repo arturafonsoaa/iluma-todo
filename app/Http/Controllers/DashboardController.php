@@ -131,6 +131,9 @@ class DashboardController extends Controller
             'completed_at' => $task->completed_at?->toISOString(),
             'created_at' => $task->created_at->toISOString(),
             'is_completed' => $task->isCompleted(),
+            'user' => [
+                'name' => $task->user->name,
+            ],
         ];
     }
 }
