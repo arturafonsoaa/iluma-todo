@@ -28,7 +28,6 @@ const mainNavItems: NavItem[] = [
         icon: ListTodo,
     },
 ];
-
 </script>
 
 <template>
