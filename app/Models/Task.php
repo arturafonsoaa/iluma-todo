@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\TaskPriority;
+use App\Enums\TaskStatus;
 use Database\Factories\TaskFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['title', 'due_date', 'completed_at', 'priority'])]
+#[Fillable(['title', 'due_date', 'completed_at', 'priority', 'status', 'started_at'])]
 class Task extends Model
 {
     /** @use HasFactory<TaskFactory> */
@@ -22,6 +23,8 @@ class Task extends Model
             'completed_at' => 'datetime',
             'due_date' => 'date',
             'priority' => TaskPriority::class,
+            'status' => TaskStatus::class,
+            'started_at' => 'datetime',
         ];
     }
 
@@ -35,6 +38,21 @@ class Task extends Model
         return $this->completed_at !== null;
     }
 
+    public function isStarted(): bool
+    {
+        return $this->status === TaskStatus::InProgress;
+    }
+
+    public function markAsStarted(): void
+    {
+        if ($this->status !== TaskStatus::InProgress) {
+            $this->update([
+                'status' => TaskStatus::InProgress,
+                'started_at' => now(),
+            ]);
+        }
+    }
+
     public function scopeCompleted($query)
     {
         return $query->whereNotNull('completed_at');
@@ -43,5 +61,15 @@ class Task extends Model
     public function scopePending($query)
     {
         return $query->whereNull('completed_at');
+    }
+
+    public function scopeStarted($query)
+    {
+        return $query->where('status', TaskStatus::InProgress);
+    }
+
+    public function scopeNotStarted($query)
+    {
+        return $query->where('status', '!=', TaskStatus::InProgress)->whereNull('completed_at');
     }
 }

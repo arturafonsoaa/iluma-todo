@@ -8,7 +8,7 @@ import {
     Circle,
     Trash2,
     X,
-    Play,
+    CirclePlay,
     Pencil,
     Check,
 } from 'lucide-vue-next';
@@ -124,10 +124,6 @@ const statusBadge = computed(() => {
 
     if (props.task.completed_at) {
         return { label: 'Concluída', icon: CheckCircle2, color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' };
-    }
-
-    if (props.task.status === 'in_progress') {
-        return { label: 'Iniciada', icon: Play, color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' };
     }
 
     return { label: 'Pendente', icon: Circle, color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' };
@@ -339,6 +335,7 @@ function handleKeydown(event: KeyboardEvent, saveFn: () => void) {
                             </div>
                             <div class="flex items-center gap-2">
                                 <Badge
+                                    v-if="task.status !== 'in_progress'"
                                     variant="secondary"
                                     :class="statusBadge.color"
                                 >
@@ -451,7 +448,7 @@ function handleKeydown(event: KeyboardEvent, saveFn: () => void) {
                             </div>
 
                             <div v-if="task.started_at" class="flex items-start gap-3">
-                                <Play class="mt-0.5 size-5 shrink-0 text-indigo-500" />
+                                <CirclePlay class="mt-0.5 size-5 shrink-0 text-amber-500" />
                                 <div>
                                     <p class="text-sm font-medium">
                                         Iniciada em {{ formatDateTime(task.started_at) }}

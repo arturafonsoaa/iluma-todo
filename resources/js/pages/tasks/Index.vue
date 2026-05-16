@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ListTodo, Plus, Trash2, CalendarDays, Flag, CheckCircle2, CircleDot, ChevronLeft, ChevronRight, RotateCcw, Play } from 'lucide-vue-next';
+import { ListTodo, Plus, Trash2, CalendarDays, Flag, CheckCircle2, CircleDot, ChevronLeft, ChevronRight, RotateCcw, CirclePlay } from 'lucide-vue-next';
 import { ref, watch, computed } from 'vue';
 import { toast } from 'vue-sonner';
 import TaskDetailSheet from '@/components/TaskDetailSheet.vue';
@@ -382,52 +382,54 @@ function renderTaskSection(tasks: Task[], sectionTitle: string, emptyMessage: st
                                     </svg>
                                 </button>
 
-                                <button
-                                    type="button"
-                                    class="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-all duration-200 hover:bg-blue-500/10 hover:text-blue-500 dark:hover:bg-blue-500/20"
-                                    @click.stop="startTask(task, $event)"
-                                >
-                                    <Play class="size-3.5" />
-                                </button>
-
-                                <div class="flex min-w-0 flex-1 items-center gap-3">
+                                <div class="flex min-w-0 flex-1 flex-col gap-1.5">
                                     <span
-                                        class="flex-1 truncate text-sm font-medium text-foreground"
+                                        class="truncate text-sm font-medium text-foreground"
                                     >
                                         {{ task.title }}
                                     </span>
 
-                                    <div class="flex shrink-0 items-center gap-2">
+                                    <div class="flex items-center gap-2">
                                         <span
                                             v-if="task.due_date"
-                                            class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground bg-background/80 border"
+                                            class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground bg-background/80 border"
                                         >
-                                            <CalendarDays class="size-3" />
+                                            <CalendarDays class="size-2.5" />
                                             {{ formatDate(task.due_date) }}
                                         </span>
 
                                         <span
-                                            class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium border"
+                                            class="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium border"
                                             :class="[
                                                 getPriorityColor(task.priority).badge,
                                                 getPriorityColor(task.priority).border
                                             ]"
                                         >
-                                            <Flag class="size-3" />
+                                            <Flag class="size-2.5" />
                                             {{ getPriorityLabel(task.priority) }}
                                         </span>
                                     </div>
                                 </div>
 
-                                <Link
-                                    :href="`/tasks/${task.id}`"
-                                    method="delete"
-                                    as="button"
-                                    class="shrink-0 rounded-md p-1.5 text-muted-foreground opacity-0 transition-all duration-200 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
-                                    @click.stop
-                                >
-                                    <Trash2 class="size-4" />
-                                </Link>
+                                <div class="flex shrink-0 items-center gap-1">
+                                    <button
+                                        type="button"
+                                        class="rounded-md p-1.5 text-muted-foreground hidden group-hover:inline-flex transition-all duration-200 hover:bg-amber-500/10 hover:text-amber-500"
+                                        @click.stop="startTask(task, $event)"
+                                    >
+                                        <CirclePlay class="size-4" />
+                                    </button>
+
+                                    <Link
+                                        :href="`/tasks/${task.id}`"
+                                        method="delete"
+                                        as="button"
+                                        class="rounded-md p-1.5 text-muted-foreground hidden group-hover:inline-flex transition-all duration-200 hover:bg-destructive/10 hover:text-destructive"
+                                        @click.stop
+                                    >
+                                        <Trash2 class="size-4" />
+                                    </Link>
+                                </div>
                             </div>
                         </li>
                     </ul>
@@ -463,50 +465,46 @@ function renderTaskSection(tasks: Task[], sectionTitle: string, emptyMessage: st
                                     </svg>
                                 </button>
 
-                                <span
-                                    class="flex size-6 shrink-0 items-center justify-center rounded-md bg-blue-500/10 text-blue-500 dark:bg-blue-500/20"
-                                >
-                                    <Play class="size-3.5 fill-blue-500" />
-                                </span>
-
-                                <div class="flex min-w-0 flex-1 items-center gap-3">
+                                <div class="flex min-w-0 flex-1 flex-col gap-1.5">
                                     <span
-                                        class="flex-1 truncate text-sm font-medium text-foreground"
+                                        class="truncate text-sm font-medium text-foreground"
                                     >
                                         {{ task.title }}
                                     </span>
 
-                                    <div class="flex shrink-0 items-center gap-2">
+                                    <div class="flex items-center gap-2">
                                         <span
                                             v-if="task.due_date"
-                                            class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground bg-background/80 border"
+                                            class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground bg-background/80 border"
                                         >
-                                            <CalendarDays class="size-3" />
+                                            <CalendarDays class="size-2.5" />
                                             {{ formatDate(task.due_date) }}
                                         </span>
 
                                         <span
-                                            class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium border"
+                                            class="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium border"
                                             :class="[
                                                 getPriorityColor(task.priority).badge,
                                                 getPriorityColor(task.priority).border
                                             ]"
                                         >
-                                            <Flag class="size-3" />
+                                            <Flag class="size-2.5" />
                                             {{ getPriorityLabel(task.priority) }}
                                         </span>
                                     </div>
                                 </div>
 
-                                <Link
-                                    :href="`/tasks/${task.id}`"
-                                    method="delete"
-                                    as="button"
-                                    class="shrink-0 rounded-md p-1.5 text-muted-foreground opacity-0 transition-all duration-200 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
-                                    @click.stop
-                                >
-                                    <Trash2 class="size-4" />
-                                </Link>
+                                <div class="flex shrink-0 items-center gap-1">
+                                    <Link
+                                        :href="`/tasks/${task.id}`"
+                                        method="delete"
+                                        as="button"
+                                        class="rounded-md p-1.5 text-muted-foreground hidden group-hover:inline-flex transition-all duration-200 hover:bg-destructive/10 hover:text-destructive"
+                                        @click.stop
+                                    >
+                                        <Trash2 class="size-4" />
+                                    </Link>
+                                </div>
                             </div>
                         </li>
                     </ul>
@@ -540,9 +538,9 @@ function renderTaskSection(tasks: Task[], sectionTitle: string, emptyMessage: st
                             </svg>
                         </button>
 
-                        <div class="flex min-w-0 flex-1 items-center gap-3">
+                        <div class="flex min-w-0 flex-1 flex-col gap-1.5">
                             <span
-                                class="flex-1 truncate text-sm font-medium"
+                                class="truncate text-sm font-medium"
                                 :class="task.completed_at
                                     ? 'text-muted-foreground line-through'
                                     : 'text-foreground'"
@@ -550,32 +548,32 @@ function renderTaskSection(tasks: Task[], sectionTitle: string, emptyMessage: st
                                 {{ task.title }}
                             </span>
 
-                            <div class="flex shrink-0 items-center gap-2">
+                            <div class="flex items-center gap-2">
                                 <span
                                     v-if="task.due_date"
-                                    class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground bg-background/80 border"
+                                    class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground bg-background/80 border"
                                 >
-                                    <CalendarDays class="size-3" />
+                                    <CalendarDays class="size-2.5" />
                                     {{ formatDate(task.due_date) }}
                                 </span>
 
                                 <span
-                                    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium border"
+                                    class="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium border"
                                     :class="[
                                         getPriorityColor(task.priority).badge,
                                         getPriorityColor(task.priority).border
                                     ]"
                                 >
-                                    <Flag class="size-3" />
+                                    <Flag class="size-2.5" />
                                     {{ getPriorityLabel(task.priority) }}
                                 </span>
                             </div>
                         </div>
 
-                        <div v-if="localFilter === 'trash'" class="shrink-0">
+                        <div v-if="localFilter === 'trash'" class="flex shrink-0 items-center gap-1">
                             <button
                                 type="button"
-                                class="rounded-md p-1.5 text-muted-foreground opacity-0 transition-all duration-200 hover:bg-emerald-500/10 hover:text-emerald-500 group-hover:opacity-100"
+                                class="rounded-md p-1.5 text-muted-foreground hidden group-hover:inline-flex transition-all duration-200 hover:bg-emerald-500/10 hover:text-emerald-500"
                                 @click.stop="restoreTask(task, $event)"
                             >
                                 <RotateCcw class="size-4" />
@@ -586,7 +584,7 @@ function renderTaskSection(tasks: Task[], sectionTitle: string, emptyMessage: st
                             :href="`/tasks/${task.id}`"
                             method="delete"
                             as="button"
-                            class="shrink-0 rounded-md p-1.5 text-muted-foreground opacity-0 transition-all duration-200 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+                            class="rounded-md p-1.5 text-muted-foreground hidden group-hover:inline-flex transition-all duration-200 hover:bg-destructive/10 hover:text-destructive"
                             @click.stop
                         >
                             <Trash2 class="size-4" />
