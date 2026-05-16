@@ -80,7 +80,7 @@ defineOptions({
     layout: {
         breadcrumbs: [
             {
-                title: 'Tarefas',
+                title: 'Minhas Tarefas',
                 href: tasksIndex(),
             },
         ],
@@ -329,18 +329,9 @@ function restoreTask(task: Task, event: Event) {
 
     <div class="flex h-full flex-1 flex-col gap-8 overflow-x-auto p-4 md:p-8">
         <div class="mx-auto w-full max-w-3xl space-y-8">
-            <div class="flex items-center justify-between">
-                <div class="space-y-1">
-                    <h1
-                        class="text-3xl font-semibold tracking-tight text-foreground"
-                    >
-                        Minhas Tarefas
-                    </h1>
-                    <p class="text-sm text-muted-foreground">
-                        Organize seu dia, uma tarefa de cada vez
-                    </p>
-                </div>
-            </div>
+            <p class="text-sm text-muted-foreground">
+                Organize seu dia, uma tarefa de cada vez
+            </p>
 
             <div class="flex flex-col gap-4">
                 <div class="-mb-1 flex overflow-x-auto pb-1">

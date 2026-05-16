@@ -77,7 +77,14 @@ useEventListener('keydown', (event: KeyboardEvent) => {
     >
         <div class="flex items-center gap-2">
             <SidebarTrigger class="-ml-1" />
-            <template v-if="breadcrumbs && breadcrumbs.length > 0">
+            <template v-if="breadcrumbs && breadcrumbs.length === 1">
+                <h1
+                    class="text-xl font-semibold tracking-tight text-foreground"
+                >
+                    {{ breadcrumbs[0].title }}
+                </h1>
+            </template>
+            <template v-else-if="breadcrumbs && breadcrumbs.length > 1">
                 <Breadcrumbs :breadcrumbs="breadcrumbs" />
             </template>
         </div>
