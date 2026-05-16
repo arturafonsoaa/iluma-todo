@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { ListTodo, Plus, Trash2, CalendarDays, Flag, CheckCircle2, CircleDot, ChevronLeft, ChevronRight, RotateCcw, CirclePlay, Folder, X } from 'lucide-vue-next';
+import { useForm } from '@inertiajs/vue3';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { ListTodo, Plus, Trash2, CalendarDays, Flag, CheckCircle2, CircleDot, ChevronLeft, ChevronRight, RotateCcw, CirclePlay, Folder, X, Search } from 'lucide-vue-next';
 import { ref, watch, computed } from 'vue';
 import { toast } from 'vue-sonner';
 import TaskDetailSheet from '@/components/TaskDetailSheet.vue';
@@ -39,6 +42,7 @@ interface Project {
     id: number;
     ulid: string;
     name: string;
+    tasks_count?: number;
 }
 
 interface PaginatorLink {
@@ -68,6 +72,11 @@ const props = defineProps<{
     tasks: PaginatedTasks;
     filter?: 'pending' | 'completed' | 'trash';
     selectedProjectUlid?: string | null;
+    counts: {
+        pending: number;
+        completed: number;
+        trash: number;
+    };
 }>();
 
 const page = usePage<SharedProps>();
@@ -91,7 +100,34 @@ const localFilter = ref<'pending' | 'completed' | 'trash'>(props.filter ?? 'pend
 const localTasks = ref<Task[]>([...props.tasks.data]);
 const localPaginator = ref<PaginatedTasks>(props.tasks);
 const dialogOpen = ref(false);
+const dialogProjectOpen = ref(false);
 const localProjectUlid = ref<string | null>(props.selectedProjectUlid || null);
+
+const projectForm = useForm({
+    name: '',
+});
+
+function createProject() {
+    projectForm.post('/projects', {
+        preserveScroll: true,
+        onSuccess: () => {
+            dialogProjectOpen.value = false;
+            projectForm.reset();
+        },
+    });
+}
+
+function handleSelectProject(ulid: string) {
+    if (ulid === 'new-project') {
+        dialogProjectOpen.value = true;
+        // The select will try to update its value, but since it's not a real project, we revert visually
+        setTimeout(() => {
+            // Keep the previous selection
+        }, 0);
+        return;
+    }
+    setProject(ulid === 'all' ? null : ulid);
+}
 
 const notStartedTasks = computed(() =>
     localTasks.value.filter((t) => t.status !== 'in_progress'),
@@ -333,97 +369,125 @@ function restoreTask(task: Task, event: Event) {
                         Organize seu dia, uma tarefa de cada vez
                     </p>
                 </div>
-
-                <Dialog v-model:open="dialogOpen">
-                    <DialogTrigger as-child>
-                        <Button variant="outline">
-                            <Plus class="size-4" />
-                            <span>Adicionar tarefa</span>
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent class="sm:max-w-md">
-                        <DialogHeader>
-                            <DialogTitle>Nova Tarefa</DialogTitle>
-                            <DialogDescription>
-                                Preencha os dados para criar uma nova tarefa.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <TaskForm :projects="sharedProjects" @submit="handleTaskSubmit" @cancel="dialogOpen = false" />
-                    </DialogContent>
-                </Dialog>
             </div>
 
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div class="flex flex-wrap items-center gap-3">
+            <div class="flex flex-col gap-4">
+                <div class="flex overflow-x-auto pb-1 -mb-1">
                     <div class="inline-flex rounded-lg border bg-muted/50 p-1">
                         <button
                             type="button"
                             @click="setFilter('pending')"
-                            class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200"
+                            class="inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200 whitespace-nowrap"
                             :class="localFilter === 'pending'
                                 ? 'bg-background text-foreground shadow-sm'
                                 : 'text-muted-foreground hover:text-foreground'"
                         >
                             <CircleDot class="size-4" />
                             Pendentes
+                            <span class="ml-1.5 flex h-5 items-center justify-center rounded-full bg-muted px-2 text-xs font-medium text-muted-foreground"
+                                  :class="localFilter === 'pending' ? 'bg-primary/10 text-primary' : ''"
+                            >
+                                {{ counts.pending }}
+                            </span>
                         </button>
                         <button
                             type="button"
                             @click="setFilter('completed')"
-                            class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200"
+                            class="inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200 whitespace-nowrap"
                             :class="localFilter === 'completed'
                                 ? 'bg-background text-foreground shadow-sm'
                                 : 'text-muted-foreground hover:text-foreground'"
                         >
                             <CheckCircle2 class="size-4" />
                             Concluídas
-                        </button>
-                        <button
-                            type="button"
-                            @click="setFilter('trash')"
-                            class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200"
-                            :class="localFilter === 'trash'
-                                ? 'bg-background text-foreground shadow-sm'
-                                : 'text-muted-foreground hover:text-foreground'"
+                            <span class="ml-1.5 flex h-5 items-center justify-center rounded-full bg-muted px-2 text-xs font-medium text-muted-foreground"
+                                  :class="localFilter === 'completed' ? 'bg-primary/10 text-primary' : ''"
                         >
-                            <Trash2 class="size-4" />
-                            Lixeira
-                        </button>
-                    </div>
-
-                    <div v-if="sharedProjects.length > 0" class="relative">
-                        <select
-                            :value="localProjectUlid ?? ''"
-                            @change="setProject(($event.target as HTMLSelectElement).value || null)"
-                            class="h-9 rounded-md border bg-background px-3 pr-8 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            {{ counts.completed }}
+                        </span>
+                    </button>
+                    <button
+                        type="button"
+                        @click="setFilter('trash')"
+                        class="inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200 whitespace-nowrap"
+                        :class="localFilter === 'trash'
+                            ? 'bg-background text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'"
+                    >
+                        <Trash2 class="size-4" />
+                        Lixeira
+                        <span class="ml-1.5 flex h-5 items-center justify-center rounded-full bg-muted px-2 text-xs font-medium text-muted-foreground"
+                              :class="localFilter === 'trash' ? 'bg-primary/10 text-primary' : ''"
                         >
-                            <option value="">Todos os projetos</option>
-                            <option
-                                v-for="project in sharedProjects"
-                                :key="project.ulid"
-                                :value="project.ulid"
-                            >
-                                {{ project.name }}
-                            </option>
-                        </select>
-                    </div>
-
-                    <div v-if="selectedProject" class="inline-flex items-center gap-1.5 rounded-full border bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800">
-                        <Folder class="size-3" />
-                        {{ selectedProject.name }}
-                        <button
-                            type="button"
-                            @click="clearProjectFilter"
-                            class="ml-0.5 rounded-full p-0.5 hover:bg-blue-200/50 dark:hover:bg-blue-800/50"
-                        >
-                            <X class="size-3" />
-                        </button>
-                    </div>
+                            {{ counts.trash }}
+                        </span>
+                    </button>
                 </div>
+            </div>
 
-                <span class="text-sm text-muted-foreground">
-                    {{ localPaginator.total }} {{ localPaginator.total === 1 ? 'tarefa' : 'tarefas' }}
-                </span>
+                <div v-if="sharedProjects.length > 0" class="flex items-center self-start relative">
+                    <Select :model-value="localProjectUlid ?? 'all'" @update:model-value="handleSelectProject">
+                        <SelectTrigger class="inline-flex max-w-[280px] w-auto h-10 px-4 rounded-full border border-blue-200 bg-blue-50 text-sm font-medium text-blue-700 shadow-sm transition-colors hover:bg-blue-100 disabled:opacity-50 disabled:pointer-events-none dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:bg-blue-900/50 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 data-[state=open]:bg-blue-100">
+                            <div class="flex items-center gap-2 max-w-full overflow-hidden">
+                                <Folder class="size-4 shrink-0" />
+                                <span class="truncate block">
+                                    {{ selectedProject ? selectedProject.name : 'Todos os projetos' }}
+                                </span>
+                            </div>
+                        </SelectTrigger>
+
+                        <SelectContent class="w-[320px] p-0 rounded-xl" :sideOffset="8">
+                            <SelectGroup class="max-h-[300px] overflow-y-auto py-1">
+                                <SelectItem
+                                    value="all"
+                                    class="flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors focus:bg-accent focus:text-accent-foreground data-[state=checked]:bg-blue-50 dark:data-[state=checked]:bg-blue-950/40"
+                                >
+                                    <div class="flex items-center gap-3 w-[260px]">
+                                        <Folder class="size-4 shrink-0" :class="!selectedProject ? 'text-blue-700 dark:text-blue-400' : 'text-muted-foreground'" />
+                                        <span class="flex-1 truncate text-sm font-medium" :class="!selectedProject ? 'text-blue-700 dark:text-blue-400' : 'text-foreground'">
+                                            Todos os projetos
+                                        </span>
+                                        <span class="ml-auto rounded-md px-2 py-0.5 text-xs inline-flex shrink-0 items-center justify-center font-medium"
+                                            :class="!selectedProject ? 'bg-blue-100/60 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-semibold' : 'text-muted-foreground'">
+                                            {{ counts.pending + counts.completed + counts.trash }} {{ (counts.pending + counts.completed + counts.trash) === 1 ? 'tarefa' : 'tarefas' }}
+                                        </span>
+                                    </div>
+                                </SelectItem>
+
+                                <SelectItem
+                                    v-for="project in sharedProjects"
+                                    :key="project.ulid"
+                                    :value="project.ulid"
+                                    class="flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors focus:bg-accent focus:text-accent-foreground data-[state=checked]:bg-blue-50 dark:data-[state=checked]:bg-blue-950/40"
+                                >
+                                    <div class="flex items-center gap-3 w-[260px]">
+                                        <Folder class="size-4 shrink-0" :class="selectedProject?.ulid === project.ulid ? 'text-blue-700 dark:text-blue-400' : 'text-muted-foreground'" />
+                                        <span class="flex-1 truncate text-sm font-medium" :class="selectedProject?.ulid === project.ulid ? 'text-blue-700 dark:text-blue-400' : 'text-foreground'">
+                                            {{ project.name }}
+                                        </span>
+                                        <span v-if="project.tasks_count !== undefined"
+                                            class="ml-auto rounded-md px-2 py-0.5 text-xs inline-flex flex-shrink-0 items-center justify-center font-medium"
+                                            :class="selectedProject?.ulid === project.ulid ? 'bg-blue-100/60 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-semibold' : 'text-muted-foreground'">
+                                            {{ project.tasks_count }} {{ project.tasks_count === 1 ? 'tarefa' : 'tarefas' }}
+                                        </span>
+                                    </div>
+                                </SelectItem>
+                            </SelectGroup>
+
+                            <SelectSeparator class="m-0" />
+                            <div class="px-2 py-2 w-full">
+                                <button
+                                    type="button"
+                                    @click.prevent.stop="dialogProjectOpen = true"
+                                    class="flex w-full items-center justify-center gap-2 rounded-md py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/40 transition-colors cursor-pointer"
+                                >
+                                    <Plus class="size-4" />
+                                    Criar novo projeto
+                                </button>
+                            </div>
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
 
             <div v-if="localTasks.length === 0" class="py-16 text-center">
@@ -750,6 +814,27 @@ function restoreTask(task: Task, event: Event) {
                 :open="sheetOpen"
                 @update:open="sheetOpen = $event"
             />
+
+            <Dialog v-model:open="dialogProjectOpen">
+                <DialogContent class="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Novo Projeto</DialogTitle>
+                        <DialogDescription>
+                            Crie um novo projeto para agrupar suas tarefas.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form @submit.prevent="createProject" class="space-y-4">
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium">Nome do Projeto</label>
+                            <Input v-model="projectForm.name" type="text" placeholder="Ex: Marketing Digital" required />
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <Button type="button" variant="outline" @click="dialogProjectOpen = false">Cancelar</Button>
+                            <Button type="submit" :disabled="projectForm.processing">Criar Projeto</Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </div>
     </div>
 </template>

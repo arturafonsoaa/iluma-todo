@@ -43,7 +43,10 @@ class HandleInertiaRequests extends Middleware
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'projects' => fn () => $request->user()
-                ? $request->user()->projects()->select('id', 'ulid', 'name')->get()
+                ? $request->user()->projects()
+                    ->select('id', 'ulid', 'name')
+                    ->withCount('tasks')
+                    ->get()
                 : [],
         ];
     }

@@ -18,14 +18,22 @@ class TaskController extends Controller
         $filter = request()->query('filter', 'pending');
         $projectUlid = request()->query('project');
 
-        $query = auth()->user()->tasks()->with(['user', 'project'])->latest();
+        $baseQuery = auth()->user()->tasks();
 
         if ($projectUlid) {
             $project = auth()->user()->projects()->where('ulid', $projectUlid)->first();
             if ($project) {
-                $query->where('project_id', $project->id);
+                $baseQuery->where('project_id', $project->id);
             }
         }
+
+        $counts = [
+            'pending' => (clone $baseQuery)->whereNull('completed_at')->count(),
+            'completed' => (clone $baseQuery)->whereNotNull('completed_at')->count(),
+            'trash' => (clone $baseQuery)->onlyTrashed()->count(),
+        ];
+
+        $query = (clone $baseQuery)->with(['user', 'project'])->latest();
 
         if ($filter === 'completed') {
             $query->whereNotNull('completed_at');
@@ -41,6 +49,7 @@ class TaskController extends Controller
             'tasks' => $tasks,
             'filter' => $filter,
             'selectedProjectUlid' => $projectUlid,
+            'counts' => $counts,
         ]);
     }
 
