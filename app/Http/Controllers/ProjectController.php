@@ -11,7 +11,7 @@ class ProjectController extends Controller
 {
     public function index(): Response
     {
-        $projects = auth()->user()->projects()->latest()->get();
+        $projects = auth()->user()->projects()->withCount('tasks')->latest()->get();
 
         return Inertia::render('projects/Index', [
             'projects' => $projects,

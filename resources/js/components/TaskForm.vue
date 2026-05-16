@@ -1,16 +1,22 @@
 <script setup lang="ts">
 import { Form } from '@inertiajs/vue3';
-import { Plus } from 'lucide-vue-next';
+import { Folder, Plus } from 'lucide-vue-next';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
+interface Project {
+    id: number;
+    name: string;
+}
+
 const props = defineProps<{
     processing?: boolean;
+    projects?: Project[];
 }>();
 
 const emits = defineEmits<{
-    submit: [formData: { title: string; due_date: string; priority: string }];
+    submit: [formData: { title: string; due_date: string; priority: string; project_id: string }];
     cancel: [];
 }>();
 </script>
@@ -21,7 +27,7 @@ const emits = defineEmits<{
         method="post"
         reset-on-success
         v-slot="{ errors, processing: formProcessing, data }"
-        @success="emits('submit', data as { title: string; due_date: string; priority: string })"
+        @success="emits('submit', data as { title: string; due_date: string; priority: string; project_id: string })"
     >
         <div class="space-y-4">
             <div class="space-y-2">
@@ -36,6 +42,26 @@ const emits = defineEmits<{
                     required
                 />
                 <InputError :message="errors.title" />
+            </div>
+
+            <div v-if="props.projects && props.projects.length > 0" class="space-y-2">
+                <label class="text-sm font-medium leading-none text-foreground">
+                    Projeto
+                </label>
+                <select
+                    name="project_id"
+                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                    <option value="">Sem projeto</option>
+                    <option
+                        v-for="project in props.projects"
+                        :key="project.id"
+                        :value="project.id"
+                    >
+                        {{ project.name }}
+                    </option>
+                </select>
+                <InputError :message="errors.project_id" />
             </div>
 
             <div class="flex flex-col gap-3 sm:flex-row sm:items-end">

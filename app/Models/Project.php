@@ -15,6 +15,11 @@ class Project extends Model
     /** @use HasFactory<ProjectFactory> */
     use HasFactory;
 
+    public function getRouteKeyName(): string
+    {
+        return 'ulid';
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

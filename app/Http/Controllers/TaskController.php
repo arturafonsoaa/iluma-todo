@@ -16,8 +16,16 @@ class TaskController extends Controller
     public function index(): Response
     {
         $filter = request()->query('filter', 'pending');
+        $projectUlid = request()->query('project');
 
-        $query = auth()->user()->tasks()->with('user')->latest();
+        $query = auth()->user()->tasks()->with(['user', 'project'])->latest();
+
+        if ($projectUlid) {
+            $project = auth()->user()->projects()->where('ulid', $projectUlid)->first();
+            if ($project) {
+                $query->where('project_id', $project->id);
+            }
+        }
 
         if ($filter === 'completed') {
             $query->whereNotNull('completed_at');
@@ -32,6 +40,7 @@ class TaskController extends Controller
         return Inertia::render('tasks/Index', [
             'tasks' => $tasks,
             'filter' => $filter,
+            'selectedProjectUlid' => $projectUlid,
         ]);
     }
 

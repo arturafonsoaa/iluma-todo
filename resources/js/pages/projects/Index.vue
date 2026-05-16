@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Head, Form } from '@inertiajs/vue3';
-import { Folder, Plus } from 'lucide-vue-next';
+import { Head, Form, Link } from '@inertiajs/vue3';
+import { Folder, Plus, ArrowUpRight } from 'lucide-vue-next';
 import { ref } from 'vue';
 import { toast } from 'vue-sonner';
 import InputError from '@/components/InputError.vue';
@@ -16,11 +16,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { index as projectsIndex } from '@/routes/projects';
+import { index as tasksIndex } from '@/routes/tasks';
 
 interface Project {
     id: number;
+    ulid: string;
     name: string;
     created_at: string;
+    tasks_count: number;
 }
 
 defineProps<{
@@ -115,10 +118,11 @@ function handleSubmit() {
             </div>
 
             <div v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <div
+                <Link
                     v-for="project in projects"
-                    :key="project.id"
-                    class="rounded-xl border bg-card p-6 shadow-sm transition-all hover:shadow-md"
+                    :key="project.ulid"
+                    :href="tasksIndex({ query: { project: project.ulid } })"
+                    class="group rounded-xl border bg-card p-6 shadow-sm transition-all hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700"
                 >
                     <div class="flex items-start gap-3">
                         <div class="flex size-10 items-center justify-center rounded-lg bg-blue-500/10">
@@ -129,11 +133,12 @@ function handleSubmit() {
                                 {{ project.name }}
                             </h3>
                             <p class="mt-1 text-xs text-muted-foreground">
-                                Criado em {{ new Date(project.created_at).toLocaleDateString('pt-BR') }}
+                                {{ project.tasks_count }} {{ project.tasks_count === 1 ? 'tarefa' : 'tarefas' }}
                             </p>
                         </div>
+                        <ArrowUpRight class="size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
                     </div>
-                </div>
+                </Link>
             </div>
         </div>
     </div>

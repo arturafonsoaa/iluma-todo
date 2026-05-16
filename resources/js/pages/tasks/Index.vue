@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
-import { ListTodo, Plus, Trash2, CalendarDays, Flag, CheckCircle2, CircleDot, ChevronLeft, ChevronRight, RotateCcw, CirclePlay } from 'lucide-vue-next';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { ListTodo, Plus, Trash2, CalendarDays, Flag, CheckCircle2, CircleDot, ChevronLeft, ChevronRight, RotateCcw, CirclePlay, Folder, X } from 'lucide-vue-next';
 import { ref, watch, computed } from 'vue';
 import { toast } from 'vue-sonner';
 import TaskDetailSheet from '@/components/TaskDetailSheet.vue';
@@ -28,6 +28,17 @@ interface Task {
     user: {
         name: string;
     };
+    project: {
+        id: number;
+        ulid: string;
+        name: string;
+    } | null;
+}
+
+interface Project {
+    id: number;
+    ulid: string;
+    name: string;
 }
 
 interface PaginatorLink {
@@ -49,10 +60,18 @@ interface PaginatedTasks {
     data: Task[];
 }
 
+interface SharedProps {
+    projects: Project[];
+}
+
 const props = defineProps<{
     tasks: PaginatedTasks;
     filter?: 'pending' | 'completed' | 'trash';
+    selectedProjectUlid?: string | null;
 }>();
+
+const page = usePage<SharedProps>();
+const sharedProjects = computed(() => page.props.projects ?? []);
 
 defineOptions({
     layout: {
@@ -72,6 +91,7 @@ const localFilter = ref<'pending' | 'completed' | 'trash'>(props.filter ?? 'pend
 const localTasks = ref<Task[]>([...props.tasks.data]);
 const localPaginator = ref<PaginatedTasks>(props.tasks);
 const dialogOpen = ref(false);
+const localProjectUlid = ref<string | null>(props.selectedProjectUlid || null);
 
 const notStartedTasks = computed(() =>
     localTasks.value.filter((t) => t.status !== 'in_progress'),
@@ -79,6 +99,10 @@ const notStartedTasks = computed(() =>
 
 const inProgressTasks = computed(() =>
     localTasks.value.filter((t) => t.status === 'in_progress'),
+);
+
+const selectedProject = computed(() =>
+    sharedProjects.value.find((p) => p.ulid === localProjectUlid.value) ?? null,
 );
 
 watch(
@@ -106,11 +130,22 @@ watch(
     },
 );
 
+watch(
+    () => props.selectedProjectUlid,
+    (newUlid) => {
+        localProjectUlid.value = newUlid || null;
+    },
+);
+
 function setFilter(filter: 'pending' | 'completed' | 'trash') {
     localFilter.value = filter;
+    const params: Record<string, string> = { filter };
+    if (localProjectUlid.value) {
+        params.project = localProjectUlid.value;
+    }
     router.get(
         tasksIndex().url,
-        { filter },
+        params,
         {
             preserveScroll: true,
             preserveState: true,
@@ -119,10 +154,31 @@ function setFilter(filter: 'pending' | 'completed' | 'trash') {
     );
 }
 
+function setProject(ulid: string | null) {
+    localProjectUlid.value = ulid;
+    const params: Record<string, string> = { filter: localFilter.value };
+    if (ulid) {
+        params.project = ulid;
+    }
+    router.get(
+        tasksIndex().url,
+        params,
+        {
+            preserveScroll: true,
+            preserveState: true,
+            replace: true,
+        },
+    );
+}
+
+function clearProjectFilter() {
+    setProject(null);
+}
+
 function getPageFromUrl(url: string | null): number | null {
     if (!url) {
-return null;
-}
+        return null;
+    }
 
     const match = url.match(/[?&]page=(\d+)/);
 
@@ -133,9 +189,13 @@ function goToPage(url: string | null) {
     const page = getPageFromUrl(url);
 
     if (page) {
+        const params: Record<string, string | number> = { filter: localFilter.value, page };
+        if (localProjectUlid.value) {
+            params.project = localProjectUlid.value;
+        }
         router.get(
             tasksIndex().url,
-            { filter: localFilter.value, page },
+            params,
             { preserveScroll: true, preserveState: true, replace: true },
         );
     }
@@ -257,10 +317,6 @@ function restoreTask(task: Task, event: Event) {
         },
     );
 }
-
-function renderTaskSection(tasks: Task[], sectionTitle: string, emptyMessage: string) {
-    return { tasks, sectionTitle, emptyMessage };
-}
 </script>
 
 <template>
@@ -292,46 +348,77 @@ function renderTaskSection(tasks: Task[], sectionTitle: string, emptyMessage: st
                                 Preencha os dados para criar uma nova tarefa.
                             </DialogDescription>
                         </DialogHeader>
-                        <TaskForm @submit="handleTaskSubmit" @cancel="dialogOpen = false" />
+                        <TaskForm :projects="sharedProjects" @submit="handleTaskSubmit" @cancel="dialogOpen = false" />
                     </DialogContent>
                 </Dialog>
             </div>
 
-            <div class="flex items-center justify-between">
-                <div class="inline-flex rounded-lg border bg-muted/50 p-1">
-                    <button
-                        type="button"
-                        @click="setFilter('pending')"
-                        class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200"
-                        :class="localFilter === 'pending'
-                            ? 'bg-background text-foreground shadow-sm'
-                            : 'text-muted-foreground hover:text-foreground'"
-                    >
-                        <CircleDot class="size-4" />
-                        Pendentes
-                    </button>
-                    <button
-                        type="button"
-                        @click="setFilter('completed')"
-                        class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200"
-                        :class="localFilter === 'completed'
-                            ? 'bg-background text-foreground shadow-sm'
-                            : 'text-muted-foreground hover:text-foreground'"
-                    >
-                        <CheckCircle2 class="size-4" />
-                        Concluídas
-                    </button>
-                    <button
-                        type="button"
-                        @click="setFilter('trash')"
-                        class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200"
-                        :class="localFilter === 'trash'
-                            ? 'bg-background text-foreground shadow-sm'
-                            : 'text-muted-foreground hover:text-foreground'"
-                    >
-                        <Trash2 class="size-4" />
-                        Lixeira
-                    </button>
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="inline-flex rounded-lg border bg-muted/50 p-1">
+                        <button
+                            type="button"
+                            @click="setFilter('pending')"
+                            class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200"
+                            :class="localFilter === 'pending'
+                                ? 'bg-background text-foreground shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'"
+                        >
+                            <CircleDot class="size-4" />
+                            Pendentes
+                        </button>
+                        <button
+                            type="button"
+                            @click="setFilter('completed')"
+                            class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200"
+                            :class="localFilter === 'completed'
+                                ? 'bg-background text-foreground shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'"
+                        >
+                            <CheckCircle2 class="size-4" />
+                            Concluídas
+                        </button>
+                        <button
+                            type="button"
+                            @click="setFilter('trash')"
+                            class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200"
+                            :class="localFilter === 'trash'
+                                ? 'bg-background text-foreground shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'"
+                        >
+                            <Trash2 class="size-4" />
+                            Lixeira
+                        </button>
+                    </div>
+
+                    <div v-if="sharedProjects.length > 0" class="relative">
+                        <select
+                            :value="localProjectUlid ?? ''"
+                            @change="setProject(($event.target as HTMLSelectElement).value || null)"
+                            class="h-9 rounded-md border bg-background px-3 pr-8 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        >
+                            <option value="">Todos os projetos</option>
+                            <option
+                                v-for="project in sharedProjects"
+                                :key="project.ulid"
+                                :value="project.ulid"
+                            >
+                                {{ project.name }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <div v-if="selectedProject" class="inline-flex items-center gap-1.5 rounded-full border bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800">
+                        <Folder class="size-3" />
+                        {{ selectedProject.name }}
+                        <button
+                            type="button"
+                            @click="clearProjectFilter"
+                            class="ml-0.5 rounded-full p-0.5 hover:bg-blue-200/50 dark:hover:bg-blue-800/50"
+                        >
+                            <X class="size-3" />
+                        </button>
+                    </div>
                 </div>
 
                 <span class="text-sm text-muted-foreground">
@@ -390,6 +477,14 @@ function renderTaskSection(tasks: Task[], sectionTitle: string, emptyMessage: st
                                     </span>
 
                                     <div class="flex items-center gap-2">
+                                        <span
+                                            v-if="task.project"
+                                            class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium text-blue-700 bg-blue-50 border border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800"
+                                        >
+                                            <Folder class="size-2.5" />
+                                            {{ task.project.name }}
+                                        </span>
+
                                         <span
                                             v-if="task.due_date"
                                             class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground bg-background/80 border"
@@ -474,6 +569,14 @@ function renderTaskSection(tasks: Task[], sectionTitle: string, emptyMessage: st
 
                                     <div class="flex items-center gap-2">
                                         <span
+                                            v-if="task.project"
+                                            class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium text-blue-700 bg-blue-50 border border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800"
+                                        >
+                                            <Folder class="size-2.5" />
+                                            {{ task.project.name }}
+                                        </span>
+
+                                        <span
                                             v-if="task.due_date"
                                             class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground bg-background/80 border"
                                         >
@@ -550,6 +653,14 @@ function renderTaskSection(tasks: Task[], sectionTitle: string, emptyMessage: st
                             </span>
 
                             <div class="flex items-center gap-2">
+                                <span
+                                    v-if="task.project"
+                                    class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium text-blue-700 bg-blue-50 border border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800"
+                                >
+                                    <Folder class="size-2.5" />
+                                    {{ task.project.name }}
+                                </span>
+
                                 <span
                                     v-if="task.due_date"
                                     class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground bg-background/80 border"

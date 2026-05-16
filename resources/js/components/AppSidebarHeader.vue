@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { usePage } from '@inertiajs/vue3';
 import { Plus } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { toast } from 'vue-sonner';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import TaskForm from '@/components/TaskForm.vue';
@@ -15,6 +16,12 @@ import {
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import type { BreadcrumbItem } from '@/types';
 
+interface Project {
+    id: number;
+    ulid: string;
+    name: string;
+}
+
 withDefaults(
     defineProps<{
         breadcrumbs?: BreadcrumbItem[];
@@ -23,6 +30,9 @@ withDefaults(
         breadcrumbs: () => [],
     },
 );
+
+const page = usePage<{ projects: Project[] }>();
+const projects = computed(() => page.props.projects ?? []);
 
 const dialogOpen = ref(false);
 
@@ -66,7 +76,7 @@ function handleTaskCancel() {
                     Preencha os dados para criar uma nova tarefa.
                 </DialogDescription>
             </DialogHeader>
-            <TaskForm @submit="handleTaskSubmit" @cancel="handleTaskCancel" />
+            <TaskForm :projects="projects" @submit="handleTaskSubmit" @cancel="handleTaskCancel" />
         </DialogContent>
     </Dialog>
 </template>
