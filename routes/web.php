@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\TaskController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
@@ -14,6 +15,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::resource('tasks', TaskController::class)
         ->only(['index', 'store', 'update', 'destroy']);
+
+    Route::resource('projects', ProjectController::class)
+        ->only(['index', 'store']);
+
+    Route::patch('tasks/{task}/start', [TaskController::class, 'start'])
+        ->name('tasks.start');
+
+    Route::patch('tasks/{task}/title', [TaskController::class, 'updateTitle'])
+        ->name('tasks.updateTitle');
+
+    Route::patch('tasks/{task}/due-date', [TaskController::class, 'updateDueDate'])
+        ->name('tasks.updateDueDate');
+
+    Route::patch('tasks/{task}/priority', [TaskController::class, 'updatePriority'])
+        ->name('tasks.updatePriority');
 
     Route::post('tasks/{task}/restore', [TaskController::class, 'restore'])
         ->name('tasks.restore');

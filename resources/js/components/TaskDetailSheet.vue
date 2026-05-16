@@ -8,8 +8,11 @@ import {
     Circle,
     Trash2,
     X,
+    Play,
+    Pencil,
+    Check,
 } from 'lucide-vue-next';
-import { computed } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,6 +31,8 @@ interface Task {
     completed_at: string | null;
     created_at: string;
     priority: 'low' | 'medium' | 'high' | 'urgent';
+    status: string;
+    started_at: string | null;
     user: {
         name: string;
     };
@@ -45,6 +50,11 @@ const emit = defineEmits<{
 function isOpen(value: boolean) {
     emit('update:open', value);
 }
+
+const editingField = ref<'title' | 'due_date' | 'priority' | null>(null);
+const editingValue = ref('');
+const titleInput = ref<HTMLInputElement | null>(null);
+const dateInput = ref<HTMLInputElement | null>(null);
 
 const priorityConfig = computed(() => {
     const config = {
@@ -77,6 +87,22 @@ const isCompleted = computed(() => {
     return props.task?.completed_at !== null;
 });
 
+const statusBadge = computed(() => {
+    if (!props.task) {
+        return { label: 'Pendente', icon: Circle, color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' };
+    }
+
+    if (props.task.completed_at) {
+        return { label: 'Concluída', icon: CheckCircle2, color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' };
+    }
+
+    if (props.task.status === 'in_progress') {
+        return { label: 'Iniciada', icon: Play, color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' };
+    }
+
+    return { label: 'Pendente', icon: Circle, color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' };
+});
+
 function formatDate(date: string): string {
     return new Date(date).toLocaleDateString('pt-BR', {
         day: '2-digit',
@@ -95,28 +121,36 @@ function formatDateTime(date: string): string {
     });
 }
 
+function formatDateForInput(date: string | null): string {
+    if (!date) {
+        return '';
+    }
+
+    return date.split('T')[0];
+}
+
 function getDaysRemaining(): string | null {
     if (!props.task?.due_date) {
-return null;
-}
+        return null;
+    }
 
     const due = new Date(props.task.due_date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     due.setHours(0, 0, 0, 0);
     const diff = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    
+
     if (diff < 0) {
-return `${Math.abs(diff)} dia${Math.abs(diff) !== 1 ? 's' : ''} atrasado`;
-}
+        return `${Math.abs(diff)} dia${Math.abs(diff) !== 1 ? 's' : ''} atrasado`;
+    }
 
     if (diff === 0) {
-return 'Hoje';
-}
+        return 'Hoje';
+    }
 
     if (diff === 1) {
-return 'Amanhã';
-}
+        return 'Amanhã';
+    }
 
     return `${diff} dias restantes`;
 }
@@ -125,8 +159,8 @@ const daysRemaining = computed(() => getDaysRemaining());
 
 function toggleComplete() {
     if (!props.task) {
-return;
-}
+        return;
+    }
 
     router.patch(`/tasks/${props.task.id}`, {}, {
         preserveScroll: true,
@@ -138,8 +172,8 @@ return;
 
 function deleteTask() {
     if (!props.task) {
-return;
-}
+        return;
+    }
 
     router.delete(`/tasks/${props.task.id}`, {
         preserveScroll: true,
@@ -147,6 +181,104 @@ return;
             emit('update:open', false);
         },
     });
+}
+
+function startEditing(field: 'title' | 'due_date' | 'priority') {
+    if (!props.task) {
+        return;
+    }
+
+    editingField.value = field;
+
+    if (field === 'title') {
+        editingValue.value = props.task.title;
+        nextTick(() => {
+            titleInput.value?.focus();
+            titleInput.value?.select();
+        });
+    } else if (field === 'due_date') {
+        editingValue.value = formatDateForInput(props.task.due_date);
+        nextTick(() => {
+            dateInput.value?.showPicker?.();
+        });
+    } else if (field === 'priority') {
+        editingValue.value = props.task.priority;
+    }
+}
+
+function cancelEditing() {
+    editingField.value = null;
+    editingValue.value = '';
+}
+
+function saveTitle() {
+    if (!props.task || !editingValue.value.trim()) {
+        cancelEditing();
+
+        return;
+    }
+
+    router.patch(`/tasks/${props.task.id}/title`, {
+        title: editingValue.value.trim(),
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            cancelEditing();
+        },
+        onError: () => {
+            cancelEditing();
+        },
+    });
+}
+
+function saveDueDate() {
+    if (!props.task) {
+        cancelEditing();
+
+        return;
+    }
+
+    router.patch(`/tasks/${props.task.id}/due-date`, {
+        due_date: editingValue.value || null,
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            cancelEditing();
+        },
+        onError: () => {
+            cancelEditing();
+        },
+    });
+}
+
+function savePriority() {
+    if (!props.task) {
+        cancelEditing();
+
+        return;
+    }
+
+    router.patch(`/tasks/${props.task.id}/priority`, {
+        priority: editingValue.value,
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            cancelEditing();
+        },
+        onError: () => {
+            cancelEditing();
+        },
+    });
+}
+
+function handleKeydown(event: KeyboardEvent, saveFn: () => void) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        saveFn();
+    } else if (event.key === 'Escape') {
+        event.preventDefault();
+        cancelEditing();
+    }
 }
 </script>
 
@@ -157,23 +289,34 @@ return;
                 <SheetHeader class="border-b px-6 py-4">
                     <div class="flex items-start justify-between gap-4">
                         <div class="flex-1 space-y-2">
-                            <SheetTitle class="text-xl leading-tight">
-                                {{ task.title }}
-                            </SheetTitle>
+                            <div class="group relative">
+                                <SheetTitle v-if="editingField !== 'title'" class="text-xl leading-tight cursor-pointer pr-6 transition-colors hover:text-primary" @click="startEditing('title')">
+                                    {{ task.title }}
+                                </SheetTitle>
+                                <div v-else class="space-y-2">
+                                    <input
+                                        ref="titleInput"
+                                        v-model="editingValue"
+                                        type="text"
+                                        class="w-full text-xl font-semibold leading-tight bg-transparent border-b-2 border-primary focus:outline-none pb-1"
+                                        @keydown="handleKeydown($event, saveTitle)"
+                                        @blur="saveTitle"
+                                    />
+                                    <p class="text-xs text-muted-foreground">
+                                        Pressione Enter para salvar ou Esc para cancelar
+                                    </p>
+                                </div>
+                            </div>
                             <div class="flex items-center gap-2">
                                 <Badge
                                     variant="secondary"
-                                    :class="[
-                                        isCompleted
-                                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                                    ]"
+                                    :class="statusBadge.color"
                                 >
                                     <component
-                                        :is="isCompleted ? CheckCircle2 : Circle"
+                                        :is="statusBadge.icon"
                                         class="mr-1 size-3"
                                     />
-                                    {{ isCompleted ? 'Concluída' : 'Pendente' }}
+                                    {{ statusBadge.label }}
                                 </Badge>
                                 <Badge variant="secondary" :class="priorityConfig.color">
                                     <Flag class="mr-1 size-3" :class="priorityConfig.icon" />
@@ -187,25 +330,48 @@ return;
                 <div class="flex-1 overflow-y-auto px-6 py-4">
                     <div class="space-y-4">
                         <div class="space-y-4">
-                            <div class="flex items-start gap-3">
+                            <div class="group flex items-start gap-3">
                                 <CalendarDays class="mt-0.5 size-5 shrink-0 text-muted-foreground" />
                                 <div class="flex-1">
-                                    <p class="text-sm font-medium">
-                                        {{ task.due_date ? formatDate(task.due_date) : 'Sem data' }}
-                                    </p>
-                                    <p
-                                        v-if="daysRemaining"
-                                        class="mt-0.5 text-xs"
-                                        :class="
-                                            daysRemaining.includes('atrasado')
-                                                ? 'text-red-500'
-                                                : daysRemaining === 'Hoje'
-                                                ? 'text-orange-500'
-                                                : 'text-muted-foreground'
-                                        "
-                                    >
-                                        {{ daysRemaining }}
-                                    </p>
+                                    <div v-if="editingField !== 'due_date'" class="flex items-center justify-between cursor-pointer -ml-2 pl-2 pr-2 py-1 rounded-md hover:bg-muted/50 transition-colors" @click="startEditing('due_date')">
+                                        <div>
+                                            <p class="text-sm font-medium">
+                                                {{ task.due_date ? formatDate(task.due_date) : 'Sem data' }}
+                                            </p>
+                                            <p
+                                                v-if="daysRemaining"
+                                                class="mt-0.5 text-xs"
+                                                :class="
+                                                    daysRemaining.includes('atrasado')
+                                                        ? 'text-red-500'
+                                                        : daysRemaining === 'Hoje'
+                                                        ? 'text-orange-500'
+                                                        : 'text-muted-foreground'
+                                                "
+                                            >
+                                                {{ daysRemaining }}
+                                            </p>
+                                        </div>
+                                        <Pencil class="size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    </div>
+                                    <div v-else class="space-y-2">
+                                        <div class="flex items-center gap-2">
+                                            <input
+                                                ref="dateInput"
+                                                v-model="editingValue"
+                                                type="date"
+                                                class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                                @keydown="handleKeydown($event, saveDueDate)"
+                                                @blur="saveDueDate"
+                                            />
+                                            <Button size="sm" variant="ghost" class="size-8 p-0" @click="saveDueDate">
+                                                <Check class="size-4" />
+                                            </Button>
+                                        </div>
+                                        <button class="text-xs text-muted-foreground hover:text-foreground transition-colors" @click="editingValue = ''; saveDueDate()">
+                                            Remover data
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -218,13 +384,44 @@ return;
                                 </div>
                             </div>
 
-                            <div class="flex items-start gap-3">
-                                <Flag class="mt-0.5 size-5 shrink-0" :class="priorityConfig.icon" />
+                            <div v-if="task.started_at" class="flex items-start gap-3">
+                                <Play class="mt-0.5 size-5 shrink-0 text-indigo-500" />
                                 <div>
-                                    <p class="text-sm font-medium">Prioridade</p>
-                                    <p class="text-xs text-muted-foreground">
-                                        {{ priorityConfig.label }}
+                                    <p class="text-sm font-medium">
+                                        Iniciada em {{ formatDateTime(task.started_at) }}
                                     </p>
+                                </div>
+                            </div>
+
+                            <div class="group flex items-start gap-3">
+                                <Flag class="mt-0.5 size-5 shrink-0" :class="priorityConfig.icon" />
+                                <div class="flex-1">
+                                    <div v-if="editingField !== 'priority'" class="flex items-center justify-between cursor-pointer -ml-2 pl-2 pr-2 py-1 rounded-md hover:bg-muted/50 transition-colors" @click="startEditing('priority')">
+                                        <div>
+                                            <p class="text-sm font-medium">Prioridade</p>
+                                            <p class="text-xs text-muted-foreground">
+                                                {{ priorityConfig.label }}
+                                            </p>
+                                        </div>
+                                        <Pencil class="size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    </div>
+                                    <div v-else class="space-y-2">
+                                        <div class="flex items-center gap-2">
+                                            <select
+                                                v-model="editingValue"
+                                                class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                                @blur="savePriority"
+                                            >
+                                                <option value="low">Baixa</option>
+                                                <option value="medium">Média</option>
+                                                <option value="high">Alta</option>
+                                                <option value="urgent">Urgente</option>
+                                            </select>
+                                            <Button size="sm" variant="ghost" class="size-8 p-0" @click="savePriority">
+                                                <Check class="size-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 

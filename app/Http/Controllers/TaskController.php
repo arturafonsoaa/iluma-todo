@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\TaskPriority;
+use App\Enums\TaskStatus;
 use App\Http\Requests\StoreTaskRequest;
 use App\Models\Task;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -49,11 +52,33 @@ class TaskController extends Controller
 
         $task->update([
             'completed_at' => $wasCompleted ? null : now(),
+            'status' => $wasCompleted ? TaskStatus::Pending : TaskStatus::Completed,
+            'started_at' => $wasCompleted ? null : $task->started_at,
         ]);
 
         Inertia::flash('toast', [
             'type' => 'success',
             'message' => $wasCompleted ? 'Tarefa reaberta com sucesso!' : 'Tarefa concluída com sucesso!',
+        ]);
+
+        return back();
+    }
+
+    public function start(Task $task): RedirectResponse
+    {
+        if ($task->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        if ($task->isCompleted()) {
+            return back();
+        }
+
+        $task->markAsStarted();
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => 'Tarefa iniciada com sucesso!',
         ]);
 
         return back();
@@ -88,6 +113,66 @@ class TaskController extends Controller
         Inertia::flash('toast', [
             'type' => 'success',
             'message' => 'Tarefa restaurada com sucesso!',
+        ]);
+
+        return back();
+    }
+
+    public function updateTitle(Request $request, Task $task): RedirectResponse
+    {
+        if ($task->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+        ]);
+
+        $task->update($validated);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => 'Título atualizado com sucesso!',
+        ]);
+
+        return back();
+    }
+
+    public function updateDueDate(Request $request, Task $task): RedirectResponse
+    {
+        if ($task->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'due_date' => ['nullable', 'date'],
+        ]);
+
+        $task->update($validated);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => $validated['due_date'] ? 'Data definida com sucesso!' : 'Data removida com sucesso!',
+        ]);
+
+        return back();
+    }
+
+    public function updatePriority(Request $request, Task $task): RedirectResponse
+    {
+        if ($task->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'priority' => ['required', 'string', 'in:'.implode(',', array_map(fn (TaskPriority $p) => $p->value, TaskPriority::cases()))],
+        ]);
+
+        $task->update($validated);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => 'Prioridade atualizada com sucesso!',
         ]);
 
         return back();
