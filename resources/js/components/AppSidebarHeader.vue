@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue';
 import { Plus } from 'lucide-vue-next';
+import { ref } from 'vue';
+import { toast } from 'vue-sonner';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import TaskForm from '@/components/TaskForm.vue';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,6 @@ import {
 } from '@/components/ui/dialog';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import type { BreadcrumbItem } from '@/types';
-import { toast } from 'vue-sonner';
 
 withDefaults(
     defineProps<{
