@@ -14,8 +14,8 @@ import {
     Zap,
 } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
-import TaskDetailSheet from '@/components/TaskDetailSheet.vue';
 import { Badge } from '@/components/ui/badge';
+import TaskDetailSheet from '@/pages/tasks/components/TaskDetailSheet.vue';
 import { dashboard } from '@/routes';
 
 interface Task {

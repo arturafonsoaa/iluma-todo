@@ -1,14 +1,10 @@
 <script setup lang="ts">
 import { Form } from '@inertiajs/vue3';
-import { Folder, Plus } from 'lucide-vue-next';
+import { Plus } from 'lucide-vue-next';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-
-interface Project {
-    id: number;
-    name: string;
-}
+import type { Project } from '@/types';
 
 const props = defineProps<{
     processing?: boolean;
@@ -16,7 +12,14 @@ const props = defineProps<{
 }>();
 
 const emits = defineEmits<{
-    submit: [formData: { title: string; due_date: string; priority: string; project_id: string }];
+    submit: [
+        formData: {
+            title: string;
+            due_date: string;
+            priority: string;
+            project_id: string;
+        },
+    ];
     cancel: [];
 }>();
 </script>
@@ -27,11 +30,21 @@ const emits = defineEmits<{
         method="post"
         reset-on-success
         v-slot="{ errors, processing: formProcessing, data }"
-        @success="emits('submit', data as { title: string; due_date: string; priority: string; project_id: string })"
+        @success="
+            emits(
+                'submit',
+                data as {
+                    title: string;
+                    due_date: string;
+                    priority: string;
+                    project_id: string;
+                },
+            )
+        "
     >
         <div class="space-y-4">
             <div class="space-y-2">
-                <label class="text-sm font-medium leading-none text-foreground">
+                <label class="text-sm leading-none font-medium text-foreground">
                     Título da Tarefa
                 </label>
                 <Input
@@ -44,13 +57,16 @@ const emits = defineEmits<{
                 <InputError :message="errors.title" />
             </div>
 
-            <div v-if="props.projects && props.projects.length > 0" class="space-y-2">
-                <label class="text-sm font-medium leading-none text-foreground">
+            <div
+                v-if="props.projects && props.projects.length > 0"
+                class="space-y-2"
+            >
+                <label class="text-sm leading-none font-medium text-foreground">
                     Projeto
                 </label>
                 <select
                     name="project_id"
-                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     <option value="">Sem projeto</option>
                     <option
@@ -66,23 +82,23 @@ const emits = defineEmits<{
 
             <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
                 <div class="flex-1 space-y-2">
-                    <label class="text-sm font-medium leading-none text-foreground">
+                    <label
+                        class="text-sm leading-none font-medium text-foreground"
+                    >
                         Data de Vencimento
                     </label>
-                    <Input
-                        type="date"
-                        name="due_date"
-                        class="w-full"
-                    />
+                    <Input type="date" name="due_date" class="w-full" />
                 </div>
 
                 <div class="flex-1 space-y-2">
-                    <label class="text-sm font-medium leading-none text-foreground">
+                    <label
+                        class="text-sm leading-none font-medium text-foreground"
+                    >
                         Prioridade
                     </label>
                     <select
                         name="priority"
-                        class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                        class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         <option value="low">Baixa</option>
                         <option value="medium" selected>Média</option>
@@ -93,12 +109,23 @@ const emits = defineEmits<{
             </div>
 
             <div class="flex justify-end gap-2">
-                <Button type="button" variant="outline" @click="emits('cancel')">
+                <Button
+                    type="button"
+                    variant="outline"
+                    @click="emits('cancel')"
+                >
                     Cancelar
                 </Button>
-                <Button type="submit" :disabled="props.processing || formProcessing">
+                <Button
+                    type="submit"
+                    :disabled="props.processing || formProcessing"
+                >
                     <Plus class="size-4" />
-                    <span>{{ (props.processing || formProcessing) ? 'Adicionando...' : 'Adicionar Tarefa' }}</span>
+                    <span>{{
+                        props.processing || formProcessing
+                            ? 'Adicionando...'
+                            : 'Adicionar Tarefa'
+                    }}</span>
                 </Button>
             </div>
         </div>

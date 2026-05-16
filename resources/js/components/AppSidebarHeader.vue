@@ -5,7 +5,6 @@ import { Plus } from 'lucide-vue-next';
 import { ref, computed } from 'vue';
 import { toast } from 'vue-sonner';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
-import TaskForm from '@/components/TaskForm.vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -15,19 +14,15 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import type { BreadcrumbItem } from '@/types';
+import TaskForm from '@/pages/tasks/components/TaskForm.vue';
+import type { BreadcrumbItem, Project } from '@/types';
 
 const TASK_FORM_KEYBOARD_SHORTCUT = 'n';
 
-const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPod|iPad/i.test(navigator.userAgent);
+const isMac =
+    typeof navigator !== 'undefined' &&
+    /Mac|iPhone|iPod|iPad/i.test(navigator.userAgent);
 const taskFormShortcutLabel = isMac ? '⌘⌥N' : 'Ctrl+Alt+N';
-
-interface Project {
-    id: number;
-    ulid: string;
-    name: string;
-    color: string;
-}
 
 withDefaults(
     defineProps<{
@@ -96,7 +91,7 @@ useEventListener('keydown', (event: KeyboardEvent) => {
             <Plus class="size-4" />
             <span>Adicionar tarefa</span>
             <kbd
-                class="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100 sm:inline-flex"
+                class="pointer-events-none hidden h-5 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100 select-none sm:inline-flex"
             >
                 {{ taskFormShortcutLabel }}
             </kbd>
@@ -111,7 +106,11 @@ useEventListener('keydown', (event: KeyboardEvent) => {
                     Preencha os dados para criar uma nova tarefa.
                 </DialogDescription>
             </DialogHeader>
-            <TaskForm :projects="projects" @submit="handleTaskSubmit" @cancel="handleTaskCancel" />
+            <TaskForm
+                :projects="projects"
+                @submit="handleTaskSubmit"
+                @cancel="handleTaskCancel"
+            />
         </DialogContent>
     </Dialog>
 </template>
