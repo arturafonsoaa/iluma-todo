@@ -1,8 +1,8 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/vue-starter-kit",
+    "name": "iluma/todo",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "Iluma Todo - gestão de tarefas.",
     "keywords": [
         "laravel",
         "framework"

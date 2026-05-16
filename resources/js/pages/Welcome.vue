@@ -108,7 +108,7 @@ const plans = [
 </script>
 
 <template>
-    <Head title="TaskFlow - Organize. Priorize. Entregue."> </Head>
+    <Head title="Iluma Todo - Organize. Priorize. Entregue."> </Head>
 
     <div
         class="min-h-screen bg-background font-sans text-foreground antialiased"
@@ -129,7 +129,7 @@ const plans = [
                             <ListTodo class="h-4 w-4" />
                         </div>
                         <span class="text-base font-semibold tracking-tight"
-                            >TaskFlow</span
+                            >Iluma Todo</span
                         >
                     </div>
 
@@ -347,7 +347,7 @@ const plans = [
                             <div
                                 class="flex-1 rounded-md bg-background px-3 py-1 text-[11px] text-muted-foreground/60"
                             >
-                                taskflow.app/tasks
+                                ilumatodo.app/tasks
                             </div>
                         </div>
 
@@ -1015,7 +1015,7 @@ const plans = [
                         <p
                             class="mt-3 text-sm leading-relaxed text-muted-foreground"
                         >
-                            "TaskFlow transformou minha forma de gerenciar
+                            "Iluma Todo transformou minha forma de gerenciar
                             projetos. Interface intuitiva e prazos inteligentes
                             sao um divisor de aguas."
                         </p>
@@ -1175,7 +1175,7 @@ const plans = [
                         >
                             <ListTodo class="h-3.5 w-3.5" />
                         </div>
-                        <span class="text-sm font-semibold">TaskFlow</span>
+                        <span class="text-sm font-semibold">Iluma Todo</span>
                     </div>
 
                     <div
@@ -1196,7 +1196,7 @@ const plans = [
                     </div>
 
                     <div class="text-xs text-muted-foreground/60">
-                        &copy; {{ new Date().getFullYear() }} TaskFlow
+                        &copy; {{ new Date().getFullYear() }} Iluma Todo
                     </div>
                 </div>
             </div>
