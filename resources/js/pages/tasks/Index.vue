@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ListTodo, Plus, Trash2, CalendarDays, Flag, CheckCircle2, CircleDot, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-vue-next';
-import { ref, watch } from 'vue';
-import TaskForm from '@/components/TaskForm.vue';
+import { ListTodo, Plus, Trash2, CalendarDays, Flag, CheckCircle2, CircleDot, ChevronLeft, ChevronRight, RotateCcw, Play } from 'lucide-vue-next';
+import { ref, watch, computed } from 'vue';
+import { toast } from 'vue-sonner';
 import TaskDetailSheet from '@/components/TaskDetailSheet.vue';
+import TaskForm from '@/components/TaskForm.vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -14,7 +15,6 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { index as tasksIndex } from '@/routes/tasks';
-import { toast } from 'vue-sonner';
 
 interface Task {
     id: number;
@@ -23,6 +23,8 @@ interface Task {
     completed_at: string | null;
     created_at: string;
     priority: 'low' | 'medium' | 'high' | 'urgent';
+    status: string;
+    started_at: string | null;
     user: {
         name: string;
     };
@@ -71,12 +73,27 @@ const localTasks = ref<Task[]>([...props.tasks.data]);
 const localPaginator = ref<PaginatedTasks>(props.tasks);
 const dialogOpen = ref(false);
 
+const notStartedTasks = computed(() =>
+    localTasks.value.filter((t) => t.status !== 'in_progress'),
+);
+
+const inProgressTasks = computed(() =>
+    localTasks.value.filter((t) => t.status === 'in_progress'),
+);
+
 watch(
     () => props.tasks,
     (newTasks) => {
         localTasks.value = [...newTasks.data];
         localPaginator.value = newTasks;
         fadingTaskIds.value.clear();
+
+        if (selectedTask.value) {
+            const updated = newTasks.data.find((t) => t.id === selectedTask.value!.id);
+            if (updated) {
+                selectedTask.value = updated;
+            }
+        }
     },
 );
 
@@ -140,6 +157,33 @@ function completeTask(task: Task, event: Event) {
 
     router.patch(
         `/tasks/${task.id}`,
+        {},
+        {
+            preserveScroll: true,
+        },
+    );
+}
+
+function startTask(task: Task, event: Event) {
+    event.stopPropagation();
+    fadingTaskIds.value.add(task.id);
+
+    setTimeout(() => {
+        const taskIndex = localTasks.value.findIndex((t) => t.id === task.id);
+
+        if (taskIndex !== -1) {
+            localTasks.value[taskIndex] = {
+                ...localTasks.value[taskIndex],
+                status: 'in_progress',
+                started_at: new Date().toISOString(),
+            };
+        }
+
+        fadingTaskIds.value.delete(task.id);
+    }, 1000);
+
+    router.patch(
+        `/tasks/${task.id}/start`,
         {},
         {
             preserveScroll: true,
@@ -212,6 +256,10 @@ function restoreTask(task: Task, event: Event) {
             preserveScroll: true,
         },
     );
+}
+
+function renderTaskSection(tasks: Task[], sectionTitle: string, emptyMessage: string) {
+    return { tasks, sectionTitle, emptyMessage };
 }
 </script>
 
@@ -302,6 +350,168 @@ function restoreTask(task: Task, event: Event) {
                     {{ localFilter === 'pending' ? 'Crie sua primeira tarefa acima para começar.' : localFilter === 'completed' ? 'Complete uma tarefa para vê-la aqui.' : 'Tarefas excluídas aparecerão aqui.' }}
                 </p>
             </div>
+
+            <template v-else-if="localFilter === 'pending'">
+                <div v-if="notStartedTasks.length > 0" class="space-y-2">
+                    <h2 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Não iniciadas
+                    </h2>
+                    <ul class="space-y-2">
+                        <li
+                            v-for="task in notStartedTasks"
+                            :key="task.id"
+                            class="group cursor-pointer"
+                            @click="openTaskSheet(task)"
+                        >
+                            <div
+                                class="flex items-center gap-3 rounded-lg border bg-card px-4 py-3 transition-all duration-1000 hover:shadow-md"
+                                :class="[
+                                    { 'opacity-0 scale-95 -translate-x-4': fadingTaskIds.has(task.id) },
+                                ]"
+                            >
+                                <button
+                                    type="button"
+                                    class="flex size-6 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200"
+                                    :class="task.completed_at
+                                        ? 'border-emerald-500 bg-emerald-500 text-white dark:border-emerald-400 dark:bg-emerald-400'
+                                        : 'border-muted-foreground/30 hover:border-primary hover:bg-primary/5'"
+                                    @click.stop="completeTask(task, $event)"
+                                >
+                                    <svg v-if="task.completed_at" class="size-3.5" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                    </svg>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-all duration-200 hover:bg-blue-500/10 hover:text-blue-500 dark:hover:bg-blue-500/20"
+                                    @click.stop="startTask(task, $event)"
+                                >
+                                    <Play class="size-3.5" />
+                                </button>
+
+                                <div class="flex min-w-0 flex-1 items-center gap-3">
+                                    <span
+                                        class="flex-1 truncate text-sm font-medium text-foreground"
+                                    >
+                                        {{ task.title }}
+                                    </span>
+
+                                    <div class="flex shrink-0 items-center gap-2">
+                                        <span
+                                            v-if="task.due_date"
+                                            class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground bg-background/80 border"
+                                        >
+                                            <CalendarDays class="size-3" />
+                                            {{ formatDate(task.due_date) }}
+                                        </span>
+
+                                        <span
+                                            class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium border"
+                                            :class="[
+                                                getPriorityColor(task.priority).badge,
+                                                getPriorityColor(task.priority).border
+                                            ]"
+                                        >
+                                            <Flag class="size-3" />
+                                            {{ getPriorityLabel(task.priority) }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <Link
+                                    :href="`/tasks/${task.id}`"
+                                    method="delete"
+                                    as="button"
+                                    class="shrink-0 rounded-md p-1.5 text-muted-foreground opacity-0 transition-all duration-200 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+                                    @click.stop
+                                >
+                                    <Trash2 class="size-4" />
+                                </Link>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <div v-if="inProgressTasks.length > 0" class="mt-6 space-y-2">
+                    <h2 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Iniciadas
+                    </h2>
+                    <ul class="space-y-2">
+                        <li
+                            v-for="task in inProgressTasks"
+                            :key="task.id"
+                            class="group cursor-pointer"
+                            @click="openTaskSheet(task)"
+                        >
+                            <div
+                                class="flex items-center gap-3 rounded-lg border bg-card px-4 py-3 transition-all duration-1000 hover:shadow-md"
+                                :class="[
+                                    { 'opacity-0 scale-95 -translate-x-4': fadingTaskIds.has(task.id) },
+                                ]"
+                            >
+                                <button
+                                    type="button"
+                                    class="flex size-6 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200"
+                                    :class="task.completed_at
+                                        ? 'border-emerald-500 bg-emerald-500 text-white dark:border-emerald-400 dark:bg-emerald-400'
+                                        : 'border-muted-foreground/30 hover:border-primary hover:bg-primary/5'"
+                                    @click.stop="completeTask(task, $event)"
+                                >
+                                    <svg v-if="task.completed_at" class="size-3.5" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                    </svg>
+                                </button>
+
+                                <span
+                                    class="flex size-6 shrink-0 items-center justify-center rounded-md bg-blue-500/10 text-blue-500 dark:bg-blue-500/20"
+                                >
+                                    <Play class="size-3.5 fill-blue-500" />
+                                </span>
+
+                                <div class="flex min-w-0 flex-1 items-center gap-3">
+                                    <span
+                                        class="flex-1 truncate text-sm font-medium text-foreground"
+                                    >
+                                        {{ task.title }}
+                                    </span>
+
+                                    <div class="flex shrink-0 items-center gap-2">
+                                        <span
+                                            v-if="task.due_date"
+                                            class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground bg-background/80 border"
+                                        >
+                                            <CalendarDays class="size-3" />
+                                            {{ formatDate(task.due_date) }}
+                                        </span>
+
+                                        <span
+                                            class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium border"
+                                            :class="[
+                                                getPriorityColor(task.priority).badge,
+                                                getPriorityColor(task.priority).border
+                                            ]"
+                                        >
+                                            <Flag class="size-3" />
+                                            {{ getPriorityLabel(task.priority) }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <Link
+                                    :href="`/tasks/${task.id}`"
+                                    method="delete"
+                                    as="button"
+                                    class="shrink-0 rounded-md p-1.5 text-muted-foreground opacity-0 transition-all duration-200 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+                                    @click.stop
+                                >
+                                    <Trash2 class="size-4" />
+                                </Link>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </template>
 
             <ul v-else class="space-y-2">
                 <li

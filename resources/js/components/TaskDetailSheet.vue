@@ -286,11 +286,11 @@ function handleKeydown(event: KeyboardEvent, saveFn: () => void) {
     <Sheet :open="open" @update:open="isOpen">
         <SheetContent class="w-full sm:max-w-lg">
             <template v-if="task">
-                <SheetHeader class="border-b px-6 py-4">
+                <SheetHeader class="border-b px-6 py-4 pr-12">
                     <div class="flex items-start justify-between gap-4">
                         <div class="flex-1 space-y-2">
                             <div class="group relative">
-                                <SheetTitle v-if="editingField !== 'title'" class="text-xl leading-tight cursor-pointer pr-6 transition-colors hover:text-primary" @click="startEditing('title')">
+                                <SheetTitle v-if="editingField !== 'title'" class="text-xl leading-tight cursor-pointer transition-colors hover:text-primary" @click="startEditing('title')">
                                     {{ task.title }}
                                 </SheetTitle>
                                 <div v-else class="space-y-2">
@@ -299,7 +299,7 @@ function handleKeydown(event: KeyboardEvent, saveFn: () => void) {
                                         v-model="editingValue"
                                         type="text"
                                         class="w-full text-xl font-semibold leading-tight bg-transparent border-b-2 border-primary focus:outline-none pb-1"
-                                        @keydown="handleKeydown($event, saveTitle)"
+                                        @keydown.stop="handleKeydown($event, saveTitle)"
                                         @blur="saveTitle"
                                     />
                                     <p class="text-xs text-muted-foreground">
@@ -361,7 +361,7 @@ function handleKeydown(event: KeyboardEvent, saveFn: () => void) {
                                                 v-model="editingValue"
                                                 type="date"
                                                 class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                                                @keydown="handleKeydown($event, saveDueDate)"
+                                                @keydown.stop="handleKeydown($event, saveDueDate)"
                                                 @blur="saveDueDate"
                                             />
                                             <Button size="sm" variant="ghost" class="size-8 p-0" @click="saveDueDate">
@@ -410,6 +410,7 @@ function handleKeydown(event: KeyboardEvent, saveFn: () => void) {
                                             <select
                                                 v-model="editingValue"
                                                 class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                                @keydown.stop="handleKeydown($event, savePriority)"
                                                 @blur="savePriority"
                                             >
                                                 <option value="low">Baixa</option>
