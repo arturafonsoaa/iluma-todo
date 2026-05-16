@@ -526,6 +526,7 @@ function renderTaskSection(tasks: Task[], sectionTitle: string, emptyMessage: st
                         ]"
                     >
                         <button
+                            v-if="localFilter !== 'trash'"
                             type="button"
                             class="flex size-6 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200"
                             :class="task.completed_at
