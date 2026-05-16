@@ -17,7 +17,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->only(['index', 'store', 'update', 'destroy']);
 
     Route::resource('projects', ProjectController::class)
-        ->only(['index', 'store']);
+        ->only(['store']);
 
     Route::patch('tasks/{task}/start', [TaskController::class, 'start'])
         ->name('tasks.start');
