@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
 import {
     CheckCircle2,
     Clock,
@@ -14,9 +13,10 @@ import {
     Target,
     Zap,
 } from 'lucide-vue-next';
-import { dashboard } from '@/routes';
-import { Badge } from '@/components/ui/badge';
+import { computed, ref } from 'vue';
 import TaskDetailSheet from '@/components/TaskDetailSheet.vue';
+import { Badge } from '@/components/ui/badge';
+import { dashboard } from '@/routes';
 
 interface Task {
     id: number;
@@ -111,6 +111,7 @@ const maxPriorityCount = computed(() => Math.max(...Object.values(props.priority
 
 const maxDailyCount = computed(() => {
     const allValues = [...props.dailyActivity.completed, ...props.dailyActivity.created];
+
     return Math.max(...allValues, 1);
 });
 
