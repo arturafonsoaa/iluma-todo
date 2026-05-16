@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { router } from '@inertiajs/vue3';
 import {
     CalendarDays,
     Clock,
@@ -17,11 +17,9 @@ import {
     SheetContent,
     SheetHeader,
     SheetTitle,
-    SheetDescription,
     SheetFooter,
     SheetClose,
 } from '@/components/ui/sheet';
-import { index as tasksIndex } from '@/routes/tasks';
 
 interface Task {
     id: number;
@@ -124,6 +122,32 @@ return 'Amanhã';
 }
 
 const daysRemaining = computed(() => getDaysRemaining());
+
+function toggleComplete() {
+    if (!props.task) {
+return;
+}
+
+    router.patch(`/tasks/${props.task.id}`, {}, {
+        preserveScroll: true,
+        onSuccess: () => {
+            emit('update:open', false);
+        },
+    });
+}
+
+function deleteTask() {
+    if (!props.task) {
+return;
+}
+
+    router.delete(`/tasks/${props.task.id}`, {
+        preserveScroll: true,
+        onSuccess: () => {
+            emit('update:open', false);
+        },
+    });
+}
 </script>
 
 <template>
@@ -234,37 +258,22 @@ const daysRemaining = computed(() => getDaysRemaining());
 
                 <SheetFooter class="border-t px-6 py-4">
                     <div class="flex w-full gap-2">
-                        <Link
-                            :href="`/tasks/${task.id}`"
-                            method="patch"
-                            as="button"
+                        <Button
+                            variant="outline"
                             class="flex-1"
-                            preserve-scroll
+                            :class="isCompleted ? 'text-orange-600 hover:text-orange-700' : 'text-green-600 hover:text-green-700'"
+                            @click="toggleComplete"
                         >
-                            <Button
-                                variant="outline"
-                                class="w-full"
-                                :class="isCompleted ? 'text-orange-600 hover:text-orange-700' : 'text-green-600 hover:text-green-700'"
-                            >
-                                <component
-                                    :is="isCompleted ? Circle : CheckCircle2"
-                                    class="mr-2 size-4"
-                                />
-                                {{ isCompleted ? 'Reabrir' : 'Concluir' }}
-                            </Button>
-                        </Link>
-                        <Link
-                            :href="`/tasks/${task.id}`"
-                            method="delete"
-                            as="button"
-                            class="flex-1"
-                            preserve-scroll
-                        >
-                            <Button variant="destructive" class="w-full">
-                                <Trash2 class="mr-2 size-4" />
-                                Excluir
-                            </Button>
-                        </Link>
+                            <component
+                                :is="isCompleted ? Circle : CheckCircle2"
+                                class="mr-2 size-4"
+                            />
+                            {{ isCompleted ? 'Reabrir' : 'Concluir' }}
+                        </Button>
+                        <Button variant="destructive" class="flex-1" @click="deleteTask">
+                            <Trash2 class="mr-2 size-4" />
+                            Excluir
+                        </Button>
                         <SheetClose as-child>
                             <Button variant="ghost" class="shrink-0">
                                 <X class="size-4" />

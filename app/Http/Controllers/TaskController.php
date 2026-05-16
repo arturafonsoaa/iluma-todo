@@ -43,8 +43,15 @@ class TaskController extends Controller
             abort(403);
         }
 
+        $wasCompleted = $task->isCompleted();
+
         $task->update([
-            'completed_at' => $task->isCompleted() ? null : now(),
+            'completed_at' => $wasCompleted ? null : now(),
+        ]);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => $wasCompleted ? 'Tarefa reaberta com sucesso!' : 'Tarefa concluída com sucesso!',
         ]);
 
         return back();
@@ -57,6 +64,11 @@ class TaskController extends Controller
         }
 
         $task->delete();
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => 'Tarefa excluída com sucesso!',
+        ]);
 
         return back();
     }

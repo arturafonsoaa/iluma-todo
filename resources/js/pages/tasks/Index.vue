@@ -61,6 +61,7 @@ const fadingTaskIds = ref<Set<number>>(new Set());
 const localFilter = ref<'pending' | 'completed'>(props.filter ?? 'pending');
 const localTasks = ref<Task[]>([...props.tasks.data]);
 const localPaginator = ref<PaginatedTasks>(props.tasks);
+const showForm = ref(false);
 
 watch(
     () => props.tasks,
@@ -94,13 +95,18 @@ function setFilter(filter: 'pending' | 'completed') {
 }
 
 function getPageFromUrl(url: string | null): number | null {
-    if (!url) return null;
+    if (!url) {
+return null;
+}
+
     const match = url.match(/[?&]page=(\d+)/);
+
     return match ? parseInt(match[1], 10) : null;
 }
 
 function goToPage(url: string | null) {
     const page = getPageFromUrl(url);
+
     if (page) {
         router.get(
             tasksIndex().url,
@@ -192,12 +198,21 @@ function getPriorityLabel(priority: string): string {
                 </p>
             </div>
 
+            <div v-if="!showForm" class="flex justify-end">
+                <Button @click="showForm = true" variant="outline">
+                    <Plus class="size-4" />
+                    <span>Adicionar tarefa</span>
+                </Button>
+            </div>
+
             <Form
+                v-else
                 action="/tasks"
                 method="post"
                 reset-on-success
                 v-slot="{ errors, processing }"
                 class="rounded-xl border bg-card p-4 shadow-sm"
+                @success="showForm = false"
             >
                 <div class="space-y-4">
                     <div class="space-y-2">
@@ -240,8 +255,13 @@ function getPriorityLabel(priority: string): string {
                                 <option value="urgent">Urgente</option>
                             </select>
                         </div>
+                    </div>
 
-                        <Button type="submit" :disabled="processing" class="w-full sm:w-auto">
+                    <div class="flex justify-end gap-2">
+                        <Button type="button" variant="outline" @click="showForm = false">
+                            Cancelar
+                        </Button>
+                        <Button type="submit" :disabled="processing">
                             <Plus class="size-4" />
                             <span>{{ processing ? 'Adicionando...' : 'Adicionar Tarefa' }}</span>
                         </Button>
