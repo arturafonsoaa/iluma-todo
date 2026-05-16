@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3';
+import { useEventListener } from '@vueuse/core';
 import { Plus } from 'lucide-vue-next';
 import { ref, computed } from 'vue';
 import { toast } from 'vue-sonner';
@@ -15,6 +16,11 @@ import {
 } from '@/components/ui/dialog';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import type { BreadcrumbItem } from '@/types';
+
+const TASK_FORM_KEYBOARD_SHORTCUT = 'n';
+
+const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPod|iPad/i.test(navigator.userAgent);
+const taskFormShortcutLabel = isMac ? '⌘⌥N' : 'Ctrl+Alt+N';
 
 interface Project {
     id: number;
@@ -44,6 +50,29 @@ function handleTaskSubmit() {
 function handleTaskCancel() {
     dialogOpen.value = false;
 }
+
+useEventListener('keydown', (event: KeyboardEvent) => {
+    if (event.key.toLowerCase() !== TASK_FORM_KEYBOARD_SHORTCUT) {
+        return;
+    }
+
+    if (!(event.ctrlKey || event.metaKey) || !event.altKey) {
+        return;
+    }
+
+    const target = event.target as HTMLElement | null;
+
+    if (target?.closest('input, textarea, select, [contenteditable="true"]')) {
+        return;
+    }
+
+    if (dialogOpen.value) {
+        return;
+    }
+
+    event.preventDefault();
+    dialogOpen.value = true;
+});
 </script>
 
 <template>
@@ -65,6 +94,11 @@ function handleTaskCancel() {
         >
             <Plus class="size-4" />
             <span>Adicionar tarefa</span>
+            <kbd
+                class="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100 sm:inline-flex"
+            >
+                {{ taskFormShortcutLabel }}
+            </kbd>
         </Button>
     </header>
 

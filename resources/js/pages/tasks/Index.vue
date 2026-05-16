@@ -1,13 +1,9 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { useForm } from '@inertiajs/vue3';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 import { ListTodo, Plus, Trash2, CalendarDays, Flag, CheckCircle2, CircleDot, ChevronLeft, ChevronRight, RotateCcw, CirclePlay, Folder, X, Search } from 'lucide-vue-next';
 import { ref, watch, computed } from 'vue';
-import { toast } from 'vue-sonner';
 import TaskDetailSheet from '@/components/TaskDetailSheet.vue';
-import TaskForm from '@/components/TaskForm.vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -15,8 +11,9 @@ import {
     DialogDescription,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from '@/components/ui/select';
 import { index as tasksIndex } from '@/routes/tasks';
 
 interface Task {
@@ -99,7 +96,6 @@ const fadingTaskIds = ref<Set<number>>(new Set());
 const localFilter = ref<'pending' | 'completed' | 'trash'>(props.filter ?? 'pending');
 const localTasks = ref<Task[]>([...props.tasks.data]);
 const localPaginator = ref<PaginatedTasks>(props.tasks);
-const dialogOpen = ref(false);
 const dialogProjectOpen = ref(false);
 const localProjectUlid = ref<string | null>(props.selectedProjectUlid || null);
 
@@ -124,8 +120,10 @@ function handleSelectProject(ulid: string) {
         setTimeout(() => {
             // Keep the previous selection
         }, 0);
+
         return;
     }
+
     setProject(ulid === 'all' ? null : ulid);
 }
 
@@ -150,6 +148,7 @@ watch(
 
         if (selectedTask.value) {
             const updated = newTasks.data.find((t) => t.id === selectedTask.value!.id);
+
             if (updated) {
                 selectedTask.value = updated;
             }
@@ -176,9 +175,11 @@ watch(
 function setFilter(filter: 'pending' | 'completed' | 'trash') {
     localFilter.value = filter;
     const params: Record<string, string> = { filter };
+
     if (localProjectUlid.value) {
         params.project = localProjectUlid.value;
     }
+
     router.get(
         tasksIndex().url,
         params,
@@ -193,9 +194,11 @@ function setFilter(filter: 'pending' | 'completed' | 'trash') {
 function setProject(ulid: string | null) {
     localProjectUlid.value = ulid;
     const params: Record<string, string> = { filter: localFilter.value };
+
     if (ulid) {
         params.project = ulid;
     }
+
     router.get(
         tasksIndex().url,
         params,
@@ -226,9 +229,11 @@ function goToPage(url: string | null) {
 
     if (page) {
         const params: Record<string, string | number> = { filter: localFilter.value, page };
+
         if (localProjectUlid.value) {
             params.project = localProjectUlid.value;
         }
+
         router.get(
             tasksIndex().url,
             params,
@@ -329,11 +334,6 @@ function getPriorityLabel(priority: string): string {
         high: 'Alta',
         urgent: 'Urgente',
     }[priority] || priority;
-}
-
-function handleTaskSubmit() {
-    dialogOpen.value = false;
-    toast.success('Tarefa adicionada com sucesso!');
 }
 
 function restoreTask(task: Task, event: Event) {
