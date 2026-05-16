@@ -13,6 +13,8 @@ RUN apt-get update \
         libicu-dev \
         libonig-dev \
         libxml2-dev \
+    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
     && docker-php-ext-install -j$(nproc) \
         pdo_mysql \
         mbstring \
