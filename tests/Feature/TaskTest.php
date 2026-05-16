@@ -148,7 +148,7 @@ test('tasks listing only shows user own tasks', function () {
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('tasks/Index')
-        ->has('tasks', 1)
-        ->where('tasks.0.title', 'My task')
+        ->has('tasks.data', 1)
+        ->where('tasks.data.0.title', 'My task')
     );
 });

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, Form, router } from '@inertiajs/vue3';
-import { ListTodo, Plus, Trash2, CalendarDays, Flag } from 'lucide-vue-next';
+import { ListTodo, Plus, Trash2, CalendarDays, Flag, CheckCircle2, CircleDot, ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import InputError from '@/components/InputError.vue';
 import TaskDetailSheet from '@/components/TaskDetailSheet.vue';
@@ -20,8 +20,28 @@ interface Task {
     };
 }
 
+interface PaginatorLink {
+    url: string | null;
+    label: string;
+    active: boolean;
+}
+
+interface PaginatedTasks {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from: number | null;
+    to: number | null;
+    links: PaginatorLink[];
+    prev_page_url: string | null;
+    next_page_url: string | null;
+    data: Task[];
+}
+
 const props = defineProps<{
-    tasks: Task[];
+    tasks: PaginatedTasks;
+    filter?: 'pending' | 'completed';
 }>();
 
 defineOptions({
@@ -38,15 +58,57 @@ defineOptions({
 const selectedTask = ref<Task | null>(null);
 const sheetOpen = ref(false);
 const fadingTaskIds = ref<Set<number>>(new Set());
-const localTasks = ref<Task[]>([...props.tasks]);
+const localFilter = ref<'pending' | 'completed'>(props.filter ?? 'pending');
+const localTasks = ref<Task[]>([...props.tasks.data]);
+const localPaginator = ref<PaginatedTasks>(props.tasks);
 
 watch(
     () => props.tasks,
     (newTasks) => {
-        localTasks.value = [...newTasks];
+        localTasks.value = [...newTasks.data];
+        localPaginator.value = newTasks;
         fadingTaskIds.value.clear();
     },
 );
+
+watch(
+    () => props.filter,
+    (newFilter) => {
+        if (newFilter) {
+            localFilter.value = newFilter;
+        }
+    },
+);
+
+function setFilter(filter: 'pending' | 'completed') {
+    localFilter.value = filter;
+    router.get(
+        tasksIndex().url,
+        { filter },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            replace: true,
+        },
+    );
+}
+
+function getPageFromUrl(url: string | null): number | null {
+    if (!url) return null;
+    const match = url.match(/[?&]page=(\d+)/);
+    return match ? parseInt(match[1], 10) : null;
+}
+
+function goToPage(url: string | null) {
+    const page = getPageFromUrl(url);
+    if (page) {
+        router.get(
+            tasksIndex().url,
+            { filter: localFilter.value, page },
+            { preserveScroll: true, preserveState: true, replace: true },
+        );
+    }
+}
 
 function openTaskSheet(task: Task) {
     selectedTask.value = task;
@@ -187,12 +249,47 @@ function getPriorityLabel(priority: string): string {
                 </div>
             </Form>
 
+            <div class="flex items-center justify-between">
+                <div class="inline-flex rounded-lg border bg-muted/50 p-1">
+                    <button
+                        type="button"
+                        @click="setFilter('pending')"
+                        class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200"
+                        :class="localFilter === 'pending'
+                            ? 'bg-background text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'"
+                    >
+                        <CircleDot class="size-4" />
+                        Pendentes
+                    </button>
+                    <button
+                        type="button"
+                        @click="setFilter('completed')"
+                        class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200"
+                        :class="localFilter === 'completed'
+                            ? 'bg-background text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'"
+                    >
+                        <CheckCircle2 class="size-4" />
+                        Concluídas
+                    </button>
+                </div>
+
+                <span class="text-sm text-muted-foreground">
+                    {{ localPaginator.total }} {{ localPaginator.total === 1 ? 'tarefa' : 'tarefas' }}
+                </span>
+            </div>
+
             <div v-if="localTasks.length === 0" class="py-16 text-center">
                 <div class="mx-auto flex size-16 items-center justify-center rounded-full bg-muted">
                     <ListTodo class="size-8 text-muted-foreground" />
                 </div>
-                <h3 class="mt-4 text-lg font-medium text-foreground">Nenhuma tarefa ainda</h3>
-                <p class="mt-2 text-sm text-muted-foreground">Crie sua primeira tarefa acima para começar.</p>
+                <h3 class="mt-4 text-lg font-medium text-foreground">
+                    {{ localFilter === 'pending' ? 'Nenhuma tarefa pendente' : 'Nenhuma tarefa concluída' }}
+                </h3>
+                <p class="mt-2 text-sm text-muted-foreground">
+                    {{ localFilter === 'pending' ? 'Crie sua primeira tarefa acima para começar.' : 'Complete uma tarefa para vê-la aqui.' }}
+                </p>
             </div>
 
             <ul v-else class="space-y-2">
@@ -204,18 +301,30 @@ function getPriorityLabel(priority: string): string {
                 >
                     <div
                         class="flex items-center gap-3 rounded-lg border bg-card px-4 py-3 transition-all duration-1000 hover:shadow-md"
-                        :class="{ 'opacity-0 scale-95 -translate-x-4': fadingTaskIds.has(task.id) }"
+                        :class="[
+                            { 'opacity-0 scale-95 -translate-x-4': fadingTaskIds.has(task.id) },
+                            task.completed_at ? 'opacity-75' : ''
+                        ]"
                     >
                         <button
                             type="button"
-                            class="flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-muted-foreground/30 transition-all duration-200 hover:border-primary hover:bg-primary/5"
+                            class="flex size-6 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200"
+                            :class="task.completed_at
+                                ? 'border-emerald-500 bg-emerald-500 text-white dark:border-emerald-400 dark:bg-emerald-400'
+                                : 'border-muted-foreground/30 hover:border-primary hover:bg-primary/5'"
                             @click.stop="completeTask(task, $event)"
                         >
+                            <svg v-if="task.completed_at" class="size-3.5" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                            </svg>
                         </button>
 
                         <div class="flex min-w-0 flex-1 items-center gap-3">
                             <span
-                                class="flex-1 truncate text-sm font-medium text-foreground"
+                                class="flex-1 truncate text-sm font-medium"
+                                :class="task.completed_at
+                                    ? 'text-muted-foreground line-through'
+                                    : 'text-foreground'"
                             >
                                 {{ task.title }}
                             </span>
@@ -254,6 +363,46 @@ function getPriorityLabel(priority: string): string {
                     </div>
                 </li>
             </ul>
+
+            <div v-if="localPaginator.last_page > 1" class="flex items-center justify-between gap-4">
+                <p class="text-sm text-muted-foreground">
+                    Mostrando {{ localPaginator.from }} a {{ localPaginator.to }} de {{ localPaginator.total }} resultados
+                </p>
+
+                <nav class="inline-flex items-center gap-1">
+                    <button
+                        type="button"
+                        @click="goToPage(localPaginator.prev_page_url)"
+                        :disabled="!localPaginator.prev_page_url"
+                        class="inline-flex size-8 items-center justify-center rounded-md border bg-background text-sm transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+                    >
+                        <ChevronLeft class="size-4" />
+                    </button>
+
+                    <template v-for="(link, index) in localPaginator.links" :key="index">
+                        <button
+                            v-if="link.url && !link.label.includes('Previous') && !link.label.includes('Next')"
+                            type="button"
+                            @click="goToPage(link.url)"
+                            class="inline-flex size-8 items-center justify-center rounded-md border text-sm transition-colors"
+                            :class="link.active
+                                ? 'border-primary bg-primary text-primary-foreground hover:bg-primary/90'
+                                : 'bg-background hover:bg-muted'"
+                        >
+                            {{ link.label.replace('&laquo;', '«').replace('&raquo;', '»') }}
+                        </button>
+                    </template>
+
+                    <button
+                        type="button"
+                        @click="goToPage(localPaginator.next_page_url)"
+                        :disabled="!localPaginator.next_page_url"
+                        class="inline-flex size-8 items-center justify-center rounded-md border bg-background text-sm transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+                    >
+                        <ChevronRight class="size-4" />
+                    </button>
+                </nav>
+            </div>
 
             <TaskDetailSheet
                 :task="selectedTask"

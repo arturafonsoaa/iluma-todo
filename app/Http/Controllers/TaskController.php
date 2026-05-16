@@ -12,10 +12,21 @@ class TaskController extends Controller
 {
     public function index(): Response
     {
-        $tasks = auth()->user()->tasks()->with('user')->whereNull('completed_at')->latest()->get();
+        $query = auth()->user()->tasks()->with('user')->latest();
+
+        $filter = request()->query('filter', 'pending');
+
+        if ($filter === 'completed') {
+            $query->whereNotNull('completed_at');
+        } else {
+            $query->whereNull('completed_at');
+        }
+
+        $tasks = $query->paginate(10);
 
         return Inertia::render('tasks/Index', [
             'tasks' => $tasks,
+            'filter' => $filter,
         ]);
     }
 
