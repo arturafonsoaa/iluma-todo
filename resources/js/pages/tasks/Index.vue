@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ListTodo, Plus, Trash2, CalendarDays, Flag, CheckCircle2, CircleDot, ChevronLeft, ChevronRight } from 'lucide-vue-next';
+import { ListTodo, Plus, Trash2, CalendarDays, Flag, CheckCircle2, CircleDot, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import TaskForm from '@/components/TaskForm.vue';
 import TaskDetailSheet from '@/components/TaskDetailSheet.vue';
@@ -49,7 +49,7 @@ interface PaginatedTasks {
 
 const props = defineProps<{
     tasks: PaginatedTasks;
-    filter?: 'pending' | 'completed';
+    filter?: 'pending' | 'completed' | 'trash';
 }>();
 
 defineOptions({
@@ -66,7 +66,7 @@ defineOptions({
 const selectedTask = ref<Task | null>(null);
 const sheetOpen = ref(false);
 const fadingTaskIds = ref<Set<number>>(new Set());
-const localFilter = ref<'pending' | 'completed'>(props.filter ?? 'pending');
+const localFilter = ref<'pending' | 'completed' | 'trash'>(props.filter ?? 'pending');
 const localTasks = ref<Task[]>([...props.tasks.data]);
 const localPaginator = ref<PaginatedTasks>(props.tasks);
 const dialogOpen = ref(false);
@@ -89,7 +89,7 @@ watch(
     },
 );
 
-function setFilter(filter: 'pending' | 'completed') {
+function setFilter(filter: 'pending' | 'completed' | 'trash') {
     localFilter.value = filter;
     router.get(
         tasksIndex().url,
@@ -195,6 +195,24 @@ function handleTaskSubmit() {
     dialogOpen.value = false;
     toast.success('Tarefa adicionada com sucesso!');
 }
+
+function restoreTask(task: Task, event: Event) {
+    event.stopPropagation();
+    fadingTaskIds.value.add(task.id);
+
+    setTimeout(() => {
+        localTasks.value = localTasks.value.filter((t) => t.id !== task.id);
+        fadingTaskIds.value.delete(task.id);
+    }, 1000);
+
+    router.post(
+        `/tasks/${task.id}/restore`,
+        {},
+        {
+            preserveScroll: true,
+        },
+    );
+}
 </script>
 
 <template>
@@ -255,6 +273,17 @@ function handleTaskSubmit() {
                         <CheckCircle2 class="size-4" />
                         Concluídas
                     </button>
+                    <button
+                        type="button"
+                        @click="setFilter('trash')"
+                        class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-200"
+                        :class="localFilter === 'trash'
+                            ? 'bg-background text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'"
+                    >
+                        <Trash2 class="size-4" />
+                        Lixeira
+                    </button>
                 </div>
 
                 <span class="text-sm text-muted-foreground">
@@ -267,10 +296,10 @@ function handleTaskSubmit() {
                     <ListTodo class="size-8 text-muted-foreground" />
                 </div>
                 <h3 class="mt-4 text-lg font-medium text-foreground">
-                    {{ localFilter === 'pending' ? 'Nenhuma tarefa pendente' : 'Nenhuma tarefa concluída' }}
+                    {{ localFilter === 'pending' ? 'Nenhuma tarefa pendente' : localFilter === 'completed' ? 'Nenhuma tarefa concluída' : 'Lixeira vazia' }}
                 </h3>
                 <p class="mt-2 text-sm text-muted-foreground">
-                    {{ localFilter === 'pending' ? 'Crie sua primeira tarefa acima para começar.' : 'Complete uma tarefa para vê-la aqui.' }}
+                    {{ localFilter === 'pending' ? 'Crie sua primeira tarefa acima para começar.' : localFilter === 'completed' ? 'Complete uma tarefa para vê-la aqui.' : 'Tarefas excluídas aparecerão aqui.' }}
                 </p>
             </div>
 
@@ -333,7 +362,17 @@ function handleTaskSubmit() {
                             </div>
                         </div>
 
+                        <div v-if="localFilter === 'trash'" class="shrink-0">
+                            <button
+                                type="button"
+                                class="rounded-md p-1.5 text-muted-foreground opacity-0 transition-all duration-200 hover:bg-emerald-500/10 hover:text-emerald-500 group-hover:opacity-100"
+                                @click.stop="restoreTask(task, $event)"
+                            >
+                                <RotateCcw class="size-4" />
+                            </button>
+                        </div>
                         <Link
+                            v-else
                             :href="`/tasks/${task.id}`"
                             method="delete"
                             as="button"

@@ -152,3 +152,64 @@ test('tasks listing only shows user own tasks', function () {
         ->where('tasks.data.0.title', 'My task')
     );
 });
+
+test('authenticated users can view trashed tasks with trash filter', function () {
+    $user = User::factory()->create();
+    $task = Task::factory()->for($user)->create();
+    $task->delete();
+
+    $response = $this
+        ->actingAs($user)
+        ->get(route('tasks.index', ['filter' => 'trash']));
+
+    $response->assertOk();
+    $response->assertInertia(fn ($page) => $page
+        ->component('tasks/Index')
+        ->has('tasks.data', 1)
+        ->where('tasks.data.0.title', $task->title)
+    );
+});
+
+test('trash filter does not show non-deleted tasks', function () {
+    $user = User::factory()->create();
+    Task::factory()->for($user)->create(['title' => 'Active task']);
+
+    $response = $this
+        ->actingAs($user)
+        ->get(route('tasks.index', ['filter' => 'trash']));
+
+    $response->assertOk();
+    $response->assertInertia(fn ($page) => $page
+        ->component('tasks/Index')
+        ->has('tasks.data', 0)
+    );
+});
+
+test('authenticated users can restore a trashed task', function () {
+    $user = User::factory()->create();
+    $task = Task::factory()->for($user)->create();
+    $task->delete();
+
+    $this->assertSoftDeleted('tasks', ['id' => $task->id]);
+
+    $response = $this
+        ->actingAs($user)
+        ->post(route('tasks.restore', $task));
+
+    $response->assertRedirect();
+
+    expect($task->fresh()->deleted_at)->toBeNull();
+});
+
+test('users cannot restore another users task', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $task = Task::factory()->for($otherUser)->create();
+    $task->delete();
+
+    $response = $this
+        ->actingAs($user)
+        ->post(route('tasks.restore', $task));
+
+    $response->assertForbidden();
+});

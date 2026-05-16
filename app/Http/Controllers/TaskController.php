@@ -12,12 +12,14 @@ class TaskController extends Controller
 {
     public function index(): Response
     {
-        $query = auth()->user()->tasks()->with('user')->latest();
-
         $filter = request()->query('filter', 'pending');
+
+        $query = auth()->user()->tasks()->with('user')->latest();
 
         if ($filter === 'completed') {
             $query->whereNotNull('completed_at');
+        } elseif ($filter === 'trash') {
+            $query->onlyTrashed();
         } else {
             $query->whereNull('completed_at');
         }
@@ -68,6 +70,24 @@ class TaskController extends Controller
         Inertia::flash('toast', [
             'type' => 'success',
             'message' => 'Tarefa excluída com sucesso!',
+        ]);
+
+        return back();
+    }
+
+    public function restore(int $task): RedirectResponse
+    {
+        $task = Task::withTrashed()->findOrFail($task);
+
+        if ($task->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $task->restore();
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => 'Tarefa restaurada com sucesso!',
         ]);
 
         return back();

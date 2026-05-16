@@ -14,6 +14,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::resource('tasks', TaskController::class)
         ->only(['index', 'store', 'update', 'destroy']);
+
+    Route::post('tasks/{task}/restore', [TaskController::class, 'restore'])
+        ->name('tasks.restore');
 });
 
 require __DIR__.'/settings.php';
