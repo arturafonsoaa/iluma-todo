@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { Head, Link, Form, router } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { ListTodo, Plus, Trash2, CalendarDays, Flag, CheckCircle2, CircleDot, ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
-import InputError from '@/components/InputError.vue';
+import TaskForm from '@/components/TaskForm.vue';
 import TaskDetailSheet from '@/components/TaskDetailSheet.vue';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { index as tasksIndex } from '@/routes/tasks';
+import { toast } from 'vue-sonner';
 
 interface Task {
     id: number;
@@ -182,6 +182,11 @@ function getPriorityLabel(priority: string): string {
         urgent: 'Urgente',
     }[priority] || priority;
 }
+
+function handleTaskSubmit() {
+    showForm.value = false;
+    toast.success('Tarefa adicionada com sucesso!');
+}
 </script>
 
 <template>
@@ -205,69 +210,9 @@ function getPriorityLabel(priority: string): string {
                 </Button>
             </div>
 
-            <Form
-                v-else
-                action="/tasks"
-                method="post"
-                reset-on-success
-                v-slot="{ errors, processing }"
-                class="rounded-xl border bg-card p-4 shadow-sm"
-                @success="showForm = false"
-            >
-                <div class="space-y-4">
-                    <div class="space-y-2">
-                        <label class="text-sm font-medium leading-none text-foreground">
-                            Título da Tarefa
-                        </label>
-                        <Input
-                            type="text"
-                            name="title"
-                            placeholder="O que precisa ser feito?"
-                            class="w-full"
-                            required
-                        />
-                        <InputError :message="errors.title" />
-                    </div>
-
-                    <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
-                        <div class="flex-1 space-y-2">
-                            <label class="text-sm font-medium leading-none text-foreground">
-                                Data de Vencimento
-                            </label>
-                            <Input
-                                type="date"
-                                name="due_date"
-                                class="w-full"
-                            />
-                        </div>
-
-                        <div class="flex-1 space-y-2">
-                            <label class="text-sm font-medium leading-none text-foreground">
-                                Prioridade
-                            </label>
-                            <select
-                                name="priority"
-                                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                                <option value="low">Baixa</option>
-                                <option value="medium" selected>Média</option>
-                                <option value="high">Alta</option>
-                                <option value="urgent">Urgente</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-end gap-2">
-                        <Button type="button" variant="outline" @click="showForm = false">
-                            Cancelar
-                        </Button>
-                        <Button type="submit" :disabled="processing">
-                            <Plus class="size-4" />
-                            <span>{{ processing ? 'Adicionando...' : 'Adicionar Tarefa' }}</span>
-                        </Button>
-                    </div>
-                </div>
-            </Form>
+            <div v-else class="rounded-xl border bg-card p-4 shadow-sm">
+                <TaskForm @submit="handleTaskSubmit" @cancel="showForm = false" />
+            </div>
 
             <div class="flex items-center justify-between">
                 <div class="inline-flex rounded-lg border bg-muted/50 p-1">
