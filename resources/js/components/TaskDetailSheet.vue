@@ -12,7 +12,7 @@ import {
     Pencil,
     Check,
 } from 'lucide-vue-next';
-import { computed, nextTick, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -55,6 +55,36 @@ const editingField = ref<'title' | 'due_date' | 'priority' | null>(null);
 const editingValue = ref('');
 const titleInput = ref<HTMLInputElement | null>(null);
 const dateInput = ref<HTMLInputElement | null>(null);
+const prioritySelect = ref<HTMLSelectElement | null>(null);
+const editingContainer = ref<HTMLElement | null>(null);
+
+function handleClickOutside(event: MouseEvent) {
+    if (!editingField.value || !editingContainer.value) {
+        return;
+    }
+
+    if (!editingContainer.value.contains(event.target as Node)) {
+        saveCurrentField();
+    }
+}
+
+function saveCurrentField() {
+    if (editingField.value === 'title') {
+        saveTitle();
+    } else if (editingField.value === 'due_date') {
+        saveDueDate();
+    } else if (editingField.value === 'priority') {
+        savePriority();
+    }
+}
+
+onMounted(() => {
+    document.addEventListener('mousedown', handleClickOutside);
+});
+
+onUnmounted(() => {
+    document.removeEventListener('mousedown', handleClickOutside);
+});
 
 const priorityConfig = computed(() => {
     const config = {
@@ -286,6 +316,7 @@ function handleKeydown(event: KeyboardEvent, saveFn: () => void) {
     <Sheet :open="open" @update:open="isOpen">
         <SheetContent class="w-full sm:max-w-lg">
             <template v-if="task">
+                <div ref="editingContainer">
                 <SheetHeader class="border-b px-6 py-4 pr-12">
                     <div class="flex items-start justify-between gap-4">
                         <div class="flex-1 space-y-2">
@@ -300,7 +331,6 @@ function handleKeydown(event: KeyboardEvent, saveFn: () => void) {
                                         type="text"
                                         class="w-full text-xl font-semibold leading-tight bg-transparent border-b-2 border-primary focus:outline-none pb-1"
                                         @keydown.stop="handleKeydown($event, saveTitle)"
-                                        @blur="saveTitle"
                                     />
                                     <p class="text-xs text-muted-foreground">
                                         Pressione Enter para salvar ou Esc para cancelar
@@ -362,7 +392,6 @@ function handleKeydown(event: KeyboardEvent, saveFn: () => void) {
                                                 type="date"
                                                 class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                                                 @keydown.stop="handleKeydown($event, saveDueDate)"
-                                                @blur="saveDueDate"
                                             />
                                             <Button size="sm" variant="ghost" class="size-8 p-0" @click="saveDueDate">
                                                 <Check class="size-4" />
@@ -372,24 +401,6 @@ function handleKeydown(event: KeyboardEvent, saveFn: () => void) {
                                             Remover data
                                         </button>
                                     </div>
-                                </div>
-                            </div>
-
-                            <div class="flex items-start gap-3">
-                                <Clock class="mt-0.5 size-5 shrink-0 text-muted-foreground" />
-                                <div>
-                                    <p class="text-sm font-medium">
-                                        Criada em {{ formatDateTime(task.created_at) }}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div v-if="task.started_at" class="flex items-start gap-3">
-                                <Play class="mt-0.5 size-5 shrink-0 text-indigo-500" />
-                                <div>
-                                    <p class="text-sm font-medium">
-                                        Iniciada em {{ formatDateTime(task.started_at) }}
-                                    </p>
                                 </div>
                             </div>
 
@@ -408,10 +419,10 @@ function handleKeydown(event: KeyboardEvent, saveFn: () => void) {
                                     <div v-else class="space-y-2">
                                         <div class="flex items-center gap-2">
                                             <select
+                                                ref="prioritySelect"
                                                 v-model="editingValue"
                                                 class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                                                 @keydown.stop="handleKeydown($event, savePriority)"
-                                                @blur="savePriority"
                                             >
                                                 <option value="low">Baixa</option>
                                                 <option value="medium">Média</option>
@@ -435,6 +446,24 @@ function handleKeydown(event: KeyboardEvent, saveFn: () => void) {
                                     <p class="text-sm font-medium">Reportada por</p>
                                     <p class="text-xs text-muted-foreground">
                                         {{ task.user.name }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div v-if="task.started_at" class="flex items-start gap-3">
+                                <Play class="mt-0.5 size-5 shrink-0 text-indigo-500" />
+                                <div>
+                                    <p class="text-sm font-medium">
+                                        Iniciada em {{ formatDateTime(task.started_at) }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-start gap-3">
+                                <Clock class="mt-0.5 size-5 shrink-0 text-muted-foreground" />
+                                <div>
+                                    <p class="text-sm font-medium">
+                                        Criada em {{ formatDateTime(task.created_at) }}
                                     </p>
                                 </div>
                             </div>
@@ -479,6 +508,7 @@ function handleKeydown(event: KeyboardEvent, saveFn: () => void) {
                         </SheetClose>
                     </div>
                 </SheetFooter>
+                </div>
             </template>
         </SheetContent>
     </Sheet>
