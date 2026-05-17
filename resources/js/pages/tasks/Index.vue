@@ -22,6 +22,7 @@ import type { Project } from '@/types';
 interface Task {
     id: number;
     title: string;
+    description: string | null;
     due_date: string | null;
     completed_at: string | null;
     created_at: string;
@@ -60,6 +61,7 @@ interface PaginatedTasks {
 
 interface SharedProps {
     projects: Project[];
+    [key: string]: unknown;
 }
 
 const props = defineProps<{
@@ -252,10 +254,24 @@ function startTask(task: Task, event: Event) {
 }
 
 function formatDate(date: string): string {
-    return new Date(date).toLocaleDateString('pt-BR', {
-        day: '2-digit',
-        month: 'short',
-    });
+    const months: Record<number, string> = {
+        1: 'jan',
+        2: 'fev',
+        3: 'mar',
+        4: 'abr',
+        5: 'mai',
+        6: 'jun',
+        7: 'jul',
+        8: 'ago',
+        9: 'set',
+        10: 'out',
+        11: 'nov',
+        12: 'dez',
+    };
+
+    const [, month, day] = date.split('-').map(Number);
+
+    return `${day} de ${months[month]}`;
 }
 
 function getPriorityColor(priority: string): {
@@ -317,6 +333,23 @@ function restoreTask(task: Task, event: Event) {
     router.post(
         `/tasks/${task.id}/restore`,
         {},
+        {
+            preserveScroll: true,
+        },
+    );
+}
+
+function forceDeleteTask(task: Task, event: Event) {
+    event.stopPropagation();
+    fadingTaskIds.value.add(task.id);
+
+    setTimeout(() => {
+        localTasks.value = localTasks.value.filter((t) => t.id !== task.id);
+        fadingTaskIds.value.delete(task.id);
+    }, 1000);
+
+    router.delete(
+        `/tasks/${task.id}/force`,
         {
             preserveScroll: true,
         },
@@ -756,6 +789,14 @@ function restoreTask(task: Task, event: Event) {
                             @click.stop="restoreTask(task, $event)"
                         >
                             <RotateCcw class="size-4" />
+                        </button>
+
+                        <button
+                            type="button"
+                            class="hidden rounded-md p-1.5 text-muted-foreground transition-all duration-200 group-hover:inline-flex hover:bg-destructive/10 hover:text-destructive"
+                            @click.stop="forceDeleteTask(task, $event)"
+                        >
+                            <Trash2 class="size-4" />
                         </button>
                     </div>
                     <Link

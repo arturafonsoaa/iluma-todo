@@ -27,6 +27,7 @@ import {
 interface Task {
     id: number;
     title: string;
+    description: string | null;
     due_date: string | null;
     completed_at: string | null;
     created_at: string;
@@ -394,6 +395,19 @@ function handleKeydown(event: KeyboardEvent, saveFn: () => void) {
                                         />
                                         {{ priorityConfig.label }}
                                     </Badge>
+                                </div>
+                                <div>
+                                    <div
+                                        v-if="task.description"
+                                        class="prose prose-sm dark:prose-invert max-w-none text-sm text-muted-foreground"
+                                        v-html="task.description"
+                                    ></div>
+                                    <p
+                                        v-else
+                                        class="text-sm text-muted-foreground"
+                                    >
+                                        Nenhuma descrição adicionada
+                                    </p>
                                 </div>
                             </div>
                         </div>
