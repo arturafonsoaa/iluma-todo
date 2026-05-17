@@ -1,0 +1,3 @@
+CREATE DATABASE IF NOT EXISTS `tasks_test`;
+GRANT ALL PRIVILEGES ON `tasks_test`.* TO 'iluma'@'%';
+FLUSH PRIVILEGES;
