@@ -137,12 +137,12 @@ function formatFullDate(dateStr: string): string {
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <!-- Total Tasks -->
             <div class="group relative overflow-hidden rounded-xl border bg-card p-6 shadow-sm transition-all hover:shadow-md">
-                <div class="absolute right-0 top-0 size-32 -translate-y-8 translate-x-8 rounded-full bg-blue-500/5 transition-transform group-hover:scale-110" />
+                <div class="absolute right-0 top-0 size-32 -translate-y-8 translate-x-8 rounded-full bg-foreground/5 transition-transform group-hover:scale-110" />
                 <div class="relative">
                     <div class="flex items-center justify-between">
                         <p class="text-sm font-medium text-muted-foreground">Total de Tarefas</p>
-                        <div class="flex size-9 items-center justify-center rounded-lg bg-blue-500/10">
-                            <ListTodo class="size-4 text-blue-600 dark:text-blue-400" />
+                        <div class="flex size-9 items-center justify-center rounded-lg bg-muted">
+                            <ListTodo class="size-4 text-amber-600 dark:text-amber-400" />
                         </div>
                     </div>
                     <div class="mt-4">
@@ -150,7 +150,7 @@ function formatFullDate(dateStr: string): string {
                         <div class="mt-1 flex items-center gap-1.5">
                             <div class="flex h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
                                 <div
-                                    class="rounded-full bg-blue-500 transition-all duration-500"
+                                    class="rounded-full bg-amber-500 transition-all duration-500"
                                     :style="{ width: `${stats.total > 0 ? (stats.pending / stats.total) * 100 : 0}%` }"
                                 />
                             </div>
@@ -188,12 +188,12 @@ function formatFullDate(dateStr: string): string {
 
             <!-- Completion Rate -->
             <div class="group relative overflow-hidden rounded-xl border bg-card p-6 shadow-sm transition-all hover:shadow-md">
-                <div class="absolute right-0 top-0 size-32 -translate-y-8 translate-x-8 rounded-full bg-violet-500/5 transition-transform group-hover:scale-110" />
+                <div class="absolute right-0 top-0 size-32 -translate-y-8 translate-x-8 rounded-full bg-foreground/5 transition-transform group-hover:scale-110" />
                 <div class="relative">
                     <div class="flex items-center justify-between">
                         <p class="text-sm font-medium text-muted-foreground">Taxa de Conclusão</p>
-                        <div class="flex size-9 items-center justify-center rounded-lg bg-violet-500/10">
-                            <Target class="size-4 text-violet-600 dark:text-violet-400" />
+                        <div class="flex size-9 items-center justify-center rounded-lg bg-muted">
+                            <Target class="size-4 text-amber-600 dark:text-amber-400" />
                         </div>
                     </div>
                     <div class="mt-4 flex items-center gap-4">
@@ -208,7 +208,7 @@ function formatFullDate(dateStr: string): string {
                                     stroke="currentColor"
                                     stroke-width="8"
                                     stroke-linecap="round"
-                                    class="text-violet-500"
+                                    class="text-amber-500"
                                     :style="{ strokeDasharray: circumference, strokeDashoffset }"
                                 />
                             </svg>
@@ -357,8 +357,8 @@ function formatFullDate(dateStr: string): string {
             <div class="rounded-xl border bg-card shadow-sm">
                 <div class="flex items-center justify-between border-b px-6 py-4">
                     <div class="flex items-center gap-2">
-                        <div class="flex size-8 items-center justify-center rounded-lg bg-blue-500/10">
-                            <CalendarDays class="size-4 text-blue-600 dark:text-blue-400" />
+                        <div class="flex size-8 items-center justify-center rounded-lg bg-muted">
+                            <CalendarDays class="size-4 text-amber-600 dark:text-amber-400" />
                         </div>
                         <div>
                             <h3 class="text-sm font-semibold text-foreground">Hoje</h3>
@@ -399,7 +399,7 @@ function formatFullDate(dateStr: string): string {
             <div class="rounded-xl border bg-card shadow-sm">
                 <div class="flex items-center justify-between border-b px-6 py-4">
                     <div class="flex items-center gap-2">
-                        <div class="flex size-8 items-center justify-center rounded-lg bg-amber-500/10">
+                        <div class="flex size-8 items-center justify-center rounded-lg bg-muted">
                             <Clock class="size-4 text-amber-600 dark:text-amber-400" />
                         </div>
                         <div>
@@ -441,8 +441,8 @@ function formatFullDate(dateStr: string): string {
             <div class="rounded-xl border bg-card shadow-sm">
                 <div class="flex items-center justify-between border-b px-6 py-4">
                     <div class="flex items-center gap-2">
-                        <div class="flex size-8 items-center justify-center rounded-lg bg-violet-500/10">
-                            <Flag class="size-4 text-violet-600 dark:text-violet-400" />
+                        <div class="flex size-8 items-center justify-center rounded-lg bg-muted">
+                            <Flag class="size-4 text-amber-600 dark:text-amber-400" />
                         </div>
                         <div>
                             <h3 class="text-sm font-semibold text-foreground">Recentes</h3>
