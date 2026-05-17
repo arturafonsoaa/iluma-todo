@@ -5,6 +5,10 @@
             "type": "local",
             "enabled": true,
             "command": [
+                "docker",
+                "exec",
+                "-i",
+                "iluma-app",
                 "php",
                 "artisan",
                 "boost:mcp"

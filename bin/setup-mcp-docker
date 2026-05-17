@@ -1,0 +1,91 @@
+#!/usr/bin/env php
+<?php
+
+$files = ['.mcp.json', '.cursor/mcp.json', 'opencode.json', '.vscode/mcp.json'];
+$codexConfigFile = '.codex/config.toml';
+
+$dockerCommand = [
+    'docker',
+    'exec',
+    '-i',
+    'iluma-app',
+    'php',
+    'artisan',
+    'boost:mcp',
+];
+
+foreach ($files as $file) {
+    if (! file_exists($file)) {
+        continue;
+    }
+
+    $config = json_decode(file_get_contents($file), true);
+
+    if (isset($config['mcpServers']['laravel-boost'])) {
+        $config['mcpServers']['laravel-boost']['command'] = 'docker';
+        $config['mcpServers']['laravel-boost']['args'] = array_slice($dockerCommand, 1);
+    }
+
+    if (isset($config['mcp']['laravel-boost'])) {
+        $config['mcp']['laravel-boost']['command'] = $dockerCommand;
+    }
+
+    if (isset($config['servers']['laravel-boost'])) {
+        $config['servers']['laravel-boost']['command'] = 'docker';
+        $config['servers']['laravel-boost']['args'] = array_slice($dockerCommand, 1);
+    }
+
+    file_put_contents(
+        $file,
+        json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n"
+    );
+}
+
+$codexLines = [
+    '[mcp_servers.laravel-boost]',
+    'command = "docker"',
+    'args = ["exec", "-i", "iluma", "php", "artisan", "boost:mcp"]',
+];
+
+if (file_exists($codexConfigFile)) {
+    $existing = file_get_contents($codexConfigFile);
+
+    if (str_contains($existing, '[mcp_servers.laravel-boost]')) {
+        $lines = file($codexConfigFile, FILE_IGNORE_NEW_LINES);
+        $newLines = [];
+        $inBoostSection = false;
+        $boostReplaced = false;
+
+        foreach ($lines as $line) {
+            $trimmed = trim($line);
+
+            if ($trimmed === '[mcp_servers.laravel-boost]') {
+                $inBoostSection = true;
+                if (! $boostReplaced) {
+                    foreach ($codexLines as $codexLine) {
+                        $newLines[] = $codexLine;
+                    }
+                    $boostReplaced = true;
+                }
+                continue;
+            }
+
+            if ($inBoostSection && str_starts_with($trimmed, '[')) {
+                $inBoostSection = false;
+                $newLines[] = $line;
+                continue;
+            }
+
+            if (! $inBoostSection) {
+                $newLines[] = $line;
+            }
+        }
+
+        file_put_contents($codexConfigFile, implode("\n", $newLines) . "\n");
+    } else {
+        $newContent = trim($existing) . "\n\n" . implode("\n", $codexLines) . "\n";
+        file_put_contents($codexConfigFile, $newContent);
+    }
+}
+
+echo "MCP files fixed (JSON + VSCode + Codex TOML).\n";
