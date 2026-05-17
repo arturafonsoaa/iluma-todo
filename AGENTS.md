@@ -88,6 +88,21 @@ This project has domain-specific skills available. You MUST activate the relevan
 
 ---
 
+## Architecture Policy (Mandatory)
+
+- **ALWAYS** read `docs/architecture.md` before building new features or refactoring existing code.
+- Architecture summary:
+  - **Thin Controllers** — HTTP layer only: dispatch actions, flash messages, return responses.
+  - **Form Requests** — dedicated validation classes with `toDto()` method.
+  - **DTOs** — `readonly` data carriers, no business logic, typed properties.
+  - **Actions** — all business logic lives here, single `execute()` method.
+  - **Repositories** — complex/reusable queries only; simple queries stay in controllers.
+  - **Flow**: `Request → Form Request → DTO → Action → Controller → Response`.
+- Follow naming conventions: `{Verb}{Entity}Action`, `{Verb}{Entity}DTO`, `{Verb}{Entity}Request`, `{Entity}Repository`.
+- Never mix layers: no validation in controllers, no business logic outside Actions, no raw arrays crossing layers.
+
+---
+
 ## Commit Policy (Mandatory)
 
 - **NEVER commit changes without explicit user permission.** Before creating a commit, always ask the user for confirmation unless the user has already explicitly instructed you to commit.
